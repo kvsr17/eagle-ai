@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
+import { AuthProvider } from '@/contexts/AuthContext'; // Import AuthProvider
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LegalForesight AI', // Updated App Name
-  description: 'Predictive Legal Document Analysis by LegalForesight AI', // Updated App Name
+  title: 'LegalForesight AI',
+  description: 'Predictive Legal Document Analysis by LegalForesight AI',
 };
 
 export default function RootLayout({
@@ -28,13 +29,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
-        <Navbar />
-        <main className="flex-grow container mx-auto px-4 py-8 main-container-print-padding">
-          {children}
-        </main>
-        <div className="no-print">
-          <Toaster />
-        </div>
+        <AuthProvider> {/* Wrap with AuthProvider */}
+          <Navbar />
+          <main className="flex-grow container mx-auto px-4 py-8 main-container-print-padding">
+            {children}
+          </main>
+          <div className="no-print">
+            <Toaster />
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
