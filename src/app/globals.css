@@ -128,39 +128,103 @@ body {
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color: black !important; /* Ensure text is black for printing */
-    background-color: white !important; /* Ensure background is white */
+    color: black !important;
+    background-color: white !important;
     font-size: 12pt;
+    padding: 0 !important;
+    margin: 0 !important;
   }
+
+  /* Hide everything in body by default for print */
+  body > * {
+    display: none !important;
+  }
+
+  /* Make the main content area and its direct children visible and full-width */
+  body > main,
+  main.main-container-print-padding {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  main.main-container-print-padding > div.max-w-4xl { /* Page container in page.tsx */
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide children of the page container, except for the .printable-area */
+  main.main-container-print-padding > div.max-w-4xl > *:not(.printable-area) {
+    display: none !important;
+  }
+
+  /* Style the .printable-area itself */
+  .printable-area {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem !important; /* Overall padding for the printed report */
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* General rule for things explicitly marked as no-print */
   .no-print, .no-print * {
     display: none !important;
   }
-  .printable-area {
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    border: none;
+
+  /* Styling for elements within the .printable-area */
+  .printable-area .card-header,
+  .printable-area .card-content,
+  .printable-area .card-footer {
+    padding: 0.5rem !important; /* Reduced padding for card sections */
   }
-  .printable-area .card-header, .printable-area .card-content, .printable-area .card-footer {
-    padding: 0.5rem; /* Reduce padding for print */
+  .printable-area .card { /* Ensure card itself has no extra print padding/margin if styles apply */
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 1px solid #ddd !important; /* Give cards a light border for definition in print */
+    box-shadow: none !important;
   }
-  .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4 {
+
+
+  .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area h5 {
     color: black !important;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
   }
-   .printable-area .text-primary {
-    color: hsl(var(--primary)) !important; /* Try to keep primary color if printer supports it */
+
+  .printable-area p, .printable-area li, .printable-area div:not(.card) { /* Avoid breaking these elements if possible */
+     page-break-inside: avoid !important;
+  }
+  .printable-area ul {
+    list-style-position: inside !important;
+  }
+
+  .printable-area .text-primary {
+    color: hsl(var(--primary)) !important;
   }
   .printable-area .text-accent {
-    color: hsl(var(--accent)) !important; /* Try to keep accent color */
+    color: hsl(var(--accent)) !important;
   }
   .printable-area .bg-accent-light {
-     background-color: hsl(var(--accent) / 0.05) !important; /* Lighter for print */
+     background-color: hsl(var(--accent) / 0.05) !important;
      border: 1px solid hsl(var(--accent) / 0.2) !important;
+     padding: 0.5rem !important; /* Add some padding to bg-accent-light areas */
+     border-radius: var(--radius-sm);
   }
-  .printable-area .text-accent-foreground {
-     color: hsl(var(--text-on-accent)) !important;
+  .printable-area .text-accent-foreground, /* Should be light on dark accent */
+  .printable-area .text-on-accent { /* Should be dark on light accent */
+     color: hsl(var(--text-on-accent)) !important; /* Standardize to dark text for print on light accent */
   }
   .printable-area .text-muted-foreground {
     color: #555 !important;
@@ -169,11 +233,24 @@ body {
     white-space: pre-wrap !important;
     word-break: break-word !important;
   }
-  /* Ensure cards are not too wide */
+  .printable-area img, .printable-area svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
   .printable-area .grid > * {
     max-width: 100%;
   }
-  .main-container-print-padding {
-    padding-top: 0 !important; /* Remove top padding for the main container in print */
+  .printable-area hr[role="separator"],
+  .printable-area div[role="separator"] { /* Targeting ShadCN Separator */
+    background-color: #ccc !important;
+    border-color: #ccc !important;
+    height: 1px !important;
+  }
+  .printable-area .border-b,
+  .printable-area .border-t,
+  .printable-area .border-l,
+  .printable-area .border-r,
+  .printable-area .border {
+    border-color: #ddd !important; /* Ensure borders are visible and not too faint */
   }
 }

@@ -31,7 +31,9 @@ export default function RootLayout({
         <main className="flex-grow container mx-auto px-4 py-8 main-container-print-padding">
           {children}
         </main>
-        <Toaster />
+        <div className="no-print">
+          <Toaster />
+        </div>
       </body>
     </html>
   );

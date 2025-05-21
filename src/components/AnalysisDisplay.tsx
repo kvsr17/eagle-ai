@@ -31,24 +31,21 @@ export function AnalysisDisplay({
   missingPoints,
 }: AnalysisDisplayProps) {
   if (!fileName && !summary && !flaggedClauses && !suggestions && !missingPoints) {
-    // If there are no results and no file name, don't render anything.
-    // This typically means the analysis hasn't run or completed yet.
     return null;
   }
   
-  // Check if there's any content to display
   const hasContent = summary?.summary || 
                      (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
                      (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
                      (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary));
 
   if (!fileName && !hasContent) {
-    return null; // Still don't render if no filename and no content
+    return null;
   }
 
 
   return (
-    <Card className="mt-6 shadow-lg border-primary/20 printable-area">
+    <Card className="mt-6 shadow-lg border-primary/20"> {/* Removed printable-area class */}
       <CardContent className="p-6 md:p-8">
         <header className="mb-8 pb-4 border-b-2 border-primary">
           <div className="flex items-center justify-between">
