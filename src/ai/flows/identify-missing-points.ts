@@ -1,3 +1,4 @@
+
 // 'use server';
 
 /**
@@ -16,7 +17,9 @@ import {z} from 'genkit';
 const IdentifyMissingPointsInputSchema = z.object({
   documentText: z
     .string()
+    .optional()
     .describe('The text content of the document to be analyzed.'),
+  photoDataUri: z.string().optional().describe("A photo or scan of the document, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. This can be an image file or a PDF file represented as a data URI."),
   documentType: z
     .string()
     .optional()
@@ -45,6 +48,9 @@ export type IdentifyMissingPointsOutput = z.infer<
 export async function identifyMissingPoints(
   input: IdentifyMissingPointsInput
 ): Promise<IdentifyMissingPointsOutput> {
+  if (!input.documentText && !input.photoDataUri) {
+    throw new Error("Either documentText or photoDataUri must be provided.");
+  }
   return identifyMissingPointsFlow(input);
 }
 
@@ -54,11 +60,18 @@ const identifyMissingPointsPrompt = ai.definePrompt({
   output: {schema: IdentifyMissingPointsOutputSchema},
   prompt: `You are an expert legal document reviewer.
 
-  Analyze the following document to identify any missing information or points. Provide specific recommendations for including these missing points to ensure the document is comprehensive and legally sound.
+  Analyze the following document (provided as text and/or image) to identify any missing information or points. Provide specific recommendations for including these missing points to ensure the document is comprehensive and legally sound.
 
   Document Type: {{documentType}}
   Context: {{context}}
-  Document Text: {{documentText}}
+  {{#if documentText}}
+  Document Text:
+  {{{documentText}}}
+  {{/if}}
+  {{#if photoDataUri}}
+  Document Image:
+  {{media url=photoDataUri}}
+  {{/if}}
 
   Missing Points: 
   Recommendations:
