@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LegalEagle AI',
-  description: 'AI Document Reviewer by LegalEagle AI',
+  title: 'LegalForesight AI', // Updated App Name
+  description: 'Predictive Legal Document Analysis by LegalForesight AI', // Updated App Name
 };
 
 export default function RootLayout({

@@ -1,3 +1,4 @@
+
 import {
   FileText,
   AlertTriangle,
@@ -6,14 +7,20 @@ import {
   Search,
   Scale,
   ChevronRight,
+  ShieldAlert, // For risk assessment
+  TrendingUp, // For predictions
+  ListChecks, // For strategy tips
+  Zap, // General foresight icon
 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import type { SummarizeLegalDocumentOutput } from '@/ai/flows/summarize-legal-document';
 import type { FlagCriticalClausesOutput } from '@/ai/flows/flag-critical-clauses';
 import type { SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
 import type { IdentifyMissingPointsOutput } from '@/ai/flows/identify-missing-points';
+import type { PredictLegalOutcomesOutput } from '@/ai/flows/predict-legal-outcomes'; // New type
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Added Card components for better structure
+import { Badge } from '@/components/ui/badge'; // For risk level
 
 interface AnalysisDisplayProps {
   fileName: string | null;
@@ -21,6 +28,7 @@ interface AnalysisDisplayProps {
   flaggedClauses: FlagCriticalClausesOutput | null;
   suggestions: SuggestImprovementsOutput | null;
   missingPoints: IdentifyMissingPointsOutput | null;
+  legalForesight: PredictLegalOutcomesOutput | null; // New prop
 }
 
 export function AnalysisDisplay({
@@ -29,43 +37,107 @@ export function AnalysisDisplay({
   flaggedClauses,
   suggestions,
   missingPoints,
+  legalForesight, // New prop
 }: AnalysisDisplayProps) {
-  if (!fileName && !summary && !flaggedClauses && !suggestions && !missingPoints) {
+  if (!fileName && !summary && !flaggedClauses && !suggestions && !missingPoints && !legalForesight) {
     return null;
   }
   
   const hasContent = summary?.summary || 
                      (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
                      (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
-                     (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary));
+                     (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) ||
+                     (legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0));
 
   if (!fileName && !hasContent) {
     return null;
   }
 
+  const getRiskBadgeVariant = (riskAssessment: string | undefined) => {
+    if (!riskAssessment) return "secondary";
+    const lowerRisk = riskAssessment.toLowerCase();
+    if (lowerRisk.includes("high")) return "destructive";
+    if (lowerRisk.includes("medium")) return "default"; // Using primary color for medium
+    if (lowerRisk.includes("low")) return "secondary"; // Or a success-like color if available
+    return "outline";
+  };
+
 
   return (
-    <Card className="mt-6 shadow-lg border-primary/20"> {/* Removed printable-area class */}
-      <CardContent className="p-6 md:p-8">
-        <header className="mb-8 pb-4 border-b-2 border-primary">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Scale size={40} className="text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold text-primary">Legal Document Analysis Report</h1>
-                <p className="text-muted-foreground">Prepared by LegalEagle AI</p>
-              </div>
+    <Card className="mt-6 shadow-lg border-primary/20"> 
+      <CardHeader className="pb-4 border-b-2 border-primary">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Zap size={40} className="text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold text-primary">LegalForesight Analysis Report</h1>
+              <p className="text-muted-foreground">Prepared by LegalForesight AI</p>
             </div>
-            {fileName && (
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Document:</p>
-                <p className="text-lg font-semibold text-primary truncate max-w-xs" title={fileName}>{fileName}</p>
-              </div>
-            )}
           </div>
-        </header>
-
+          {fileName && (
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Document:</p>
+              <p className="text-lg font-semibold text-primary truncate max-w-xs" title={fileName}>{fileName}</p>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-6 md:p-8">
         <div className="space-y-10">
+          {/* Legal Foresight Section - Placed first as it's the new core feature */}
+          {legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0) && (
+            <SectionCard title="Legal Foresight & Predictions" icon={<Zap size={28} />} accentHighlight={false} className="border-2 border-primary/30 p-6 rounded-lg bg-primary/5">
+              {legalForesight.overallRiskAssessment && (
+                <div className="mb-6 p-4 rounded-md bg-background shadow">
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <ShieldAlert size={22} /> Overall Risk Assessment
+                  </h4>
+                  <Badge variant={getRiskBadgeVariant(legalForesight.overallRiskAssessment)} className="text-sm mb-2">
+                    {legalForesight.overallRiskAssessment.split(':')[0]} {/* Display HIGH/MEDIUM/LOW part */}
+                  </Badge>
+                  <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                    {legalForesight.overallRiskAssessment.substring(legalForesight.overallRiskAssessment.indexOf(':') + 1).trim()}
+                  </p>
+                </div>
+              )}
+
+              {legalForesight.predictedOutcomes.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
+                    <TrendingUp size={22} /> Potential Real-World Outcomes
+                  </h4>
+                  <ul className="space-y-4">
+                    {legalForesight.predictedOutcomes.map((outcome, index) => (
+                      <li key={`outcome-${index}`} className="p-3 border border-primary/20 rounded-md bg-background/70 shadow-sm">
+                        <p className="font-medium text-foreground/90 mb-1"><span className="font-semibold">Issue:</span> {outcome.identifiedIssue}</p>
+                        <p className="text-sm text-foreground/80"><span className="font-semibold">Predicted Outcome:</span> {outcome.potentialRealWorldOutcome}</p>
+                        {outcome.riskCategory && (
+                          <Badge variant="outline" className="mt-2 text-xs">{outcome.riskCategory}</Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {legalForesight.strategicRecommendations.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
+                    <ListChecks size={22} /> Strategic Recommendations
+                  </h4>
+                  <ul className="space-y-2 list-disc list-inside pl-2">
+                    {legalForesight.strategicRecommendations.map((rec, index) => (
+                      <li key={`strategic-rec-${index}`} className="text-foreground/90 marker:text-primary">{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </SectionCard>
+          )}
+          
+          { (legalForesight && hasContent) && <Separator className="my-8 border-primary/20"/>}
+
+
           {summary?.summary && (
             <SectionCard title="I. Document Summary" icon={<Search size={28} />}>
               <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{summary.summary}</p>
@@ -154,17 +226,17 @@ export function AnalysisDisplay({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    This report was generated by LegalEagle AI on {new Date().toLocaleDateString()}.
+                    This report was generated by LegalForesight AI on {new Date().toLocaleDateString()}.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    For informational purposes only. This is not legal advice.
+                    Predictive analysis for informational purposes only. This is not legal advice.
                     Always consult with a qualified legal professional for any legal matters.
                   </p>
                 </div>
                 <div className="md:text-right">
                   <div className="inline-block mt-4 md:mt-0">
                     <div className="w-48 h-px bg-gray-400 mb-1"></div>
-                    <p className="text-sm text-muted-foreground">Authorized Signature (LegalEagle AI Platform)</p>
+                    <p className="text-sm text-muted-foreground">Authorized Signature (LegalForesight AI Platform)</p>
                   </div>
                 </div>
               </div>

@@ -1,7 +1,8 @@
 {
-  "name": "nextn",
+  "name": "legaleagle-ai",
   "version": "0.1.0",
   "private": true,
+  "description": "LegalForesight AI: Predictive Legal Document Analysis",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
