@@ -7,12 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea'; // Added Textarea
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye } from 'lucide-react'; 
+import { FileUp, AlertCircle, Printer, ScanEye, Zap } from 'lucide-react'; 
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -30,7 +30,7 @@ export default function HomePage() {
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [documentContext, setDocumentContext] = useState<string>(""); // New state for document context
+  const [documentContext, setDocumentContext] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -176,7 +176,7 @@ export default function HomePage() {
         setError(`All AI analyses failed. Errors: ${errorMessages}`);
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
       } else if (anyFailed) {
-         toast({ title: "Partial Success", description: "Some analyses could not be completed. Please check the report for details.", variant: "default" });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Please check the report and error messages for details.", variant: "default" });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -194,8 +194,14 @@ export default function HomePage() {
     window.print();
   };
 
-  if (authLoading || (!currentUser && !authLoading)) {
-    return <div className="flex justify-center items-center min-h-screen"><LoadingIndicator text="Loading application..." /></div>;
+  if (authLoading) {
+    return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Loading application..." /></div>;
+  }
+
+  if (!currentUser) {
+    // This state should be brief as useEffect will redirect.
+    // Or, you might not even need to render anything here if redirection is fast enough.
+    return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Redirecting to login..." /></div>;
   }
 
   const hasResults = summary || flaggedClauses || suggestions || missingPoints || legalForesight;
@@ -260,7 +266,19 @@ export default function HomePage() {
               className="w-full text-lg py-3"
               size="lg"
             >
-              {isLoading ? 'Analyzing...' : (fileName ? 'Analyze Document' : 'Upload')}
+               {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Analyzing...
+                </>
+              ) : fileName ? (
+                <>
+                  <Zap className="mr-2 h-5 w-5" />
+                  Analyze & Predict
+                </>
+              ) : (
+                'Upload Document'
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -269,7 +287,7 @@ export default function HomePage() {
       {isLoading && <div className="no-print"><LoadingIndicator text="Generating insights & predictions..." /></div>}
 
       {error && !isLoading && (
-        <div className="no-print mt-6 max-w-lg mx-auto"> {/* Increased max-width for error alert */}
+        <div className="no-print mt-6 max-w-lg mx-auto">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error During Analysis</AlertTitle>
@@ -313,4 +331,3 @@ export default function HomePage() {
   );
 }
     
-

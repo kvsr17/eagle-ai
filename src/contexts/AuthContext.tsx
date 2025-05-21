@@ -107,7 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout: logoutUser,
   };
 
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  // Always render the Provider and its children.
+  // Consuming components will use the `loading` state from `useAuth()`
+  // to decide what to display (e.g., a loading spinner).
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
