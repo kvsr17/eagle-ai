@@ -9,13 +9,13 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, Zap } from 'lucide-react'; // Added Zap for Foresight
+import { FileUp, AlertCircle, Printer, Zap } from 'lucide-react'; 
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
 import { suggestImprovements, type SuggestImprovementsOutput, type SuggestImprovementsInput } from '@/ai/flows/suggest-improvements';
 import { identifyMissingPoints, type IdentifyMissingPointsOutput, type IdentifyMissingPointsInput } from '@/ai/flows/identify-missing-points';
-import { predictLegalOutcomes, type PredictLegalOutcomesOutput, type PredictLegalOutcomesInput } from '@/ai/flows/predict-legal-outcomes'; // New Flow
+import { predictLegalOutcomes, type PredictLegalOutcomesOutput, type PredictLegalOutcomesInput } from '@/ai/flows/predict-legal-outcomes';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function HomePage() {
@@ -30,18 +30,17 @@ export default function HomePage() {
   const [flaggedClauses, setFlaggedClauses] = useState<FlagCriticalClausesOutput | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestImprovementsOutput | null>(null);
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
-  const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null); // New state for foresight analysis
+  const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFileName(file.name);
-      // Clear previous results, error, and data
       setSummary(null);
       setFlaggedClauses(null);
       setSuggestions(null);
       setMissingPoints(null);
-      setLegalForesight(null); // Clear foresight results
+      setLegalForesight(null);
       setError(null);
       setDocumentText(null);
       setImageDataUri(null);
@@ -91,7 +90,7 @@ export default function HomePage() {
     setFlaggedClauses(null);
     setSuggestions(null);
     setMissingPoints(null);
-    setLegalForesight(null); // Reset foresight state
+    setLegalForesight(null);
 
     const basePayload: { documentText?: string | null; photoDataUri?: string | null; context?: string } = {};
     if (documentText) {
@@ -100,7 +99,6 @@ export default function HomePage() {
     if (imageDataUri) {
       basePayload.photoDataUri = imageDataUri;
     }
-    // Basic context based on filename, can be improved
     if (fileName) {
         if (fileName.toLowerCase().includes('agreement')) basePayload.context = 'Agreement Document';
         else if (fileName.toLowerCase().includes('offer') || fileName.toLowerCase().includes('letter')) basePayload.context = 'Offer Letter or Similar';
@@ -115,7 +113,7 @@ export default function HomePage() {
         flagCriticalClauses({ ...basePayload, context: basePayload.context || "General legal document review" } as FlagCriticalClausesInput),
         suggestImprovements({ ...basePayload, context: basePayload.context || "General legal document review" } as SuggestImprovementsInput),
         identifyMissingPoints({ ...basePayload, documentType: basePayload.context || "General", context: basePayload.context || "General legal document review" } as IdentifyMissingPointsInput),
-        predictLegalOutcomes(basePayload as PredictLegalOutcomesInput), // Call new flow
+        predictLegalOutcomes(basePayload as PredictLegalOutcomesInput),
       ]);
 
       const [summaryRes, clausesRes, improvementsRes, missingPointsRes, foresightRes] = results;
@@ -144,7 +142,7 @@ export default function HomePage() {
          setError(prev => prev ? prev + "\nMissing points analysis failed." : "Missing points analysis failed.");
       }
 
-      if (foresightRes.status === 'fulfilled') setLegalForesight(foresightRes.value); // Set foresight results
+      if (foresightRes.status === 'fulfilled') setLegalForesight(foresightRes.value);
       else {
         console.error("Legal foresight analysis failed:", foresightRes.reason);
         setError(prev => prev ? prev + "\nLegal foresight analysis failed." : "Legal foresight analysis failed.");
@@ -213,6 +211,7 @@ export default function HomePage() {
             className="w-full text-lg py-6"
             size="lg"
           >
+            <Zap className="mr-2 h-5 w-5" /> {/* Added Zap icon here */}
             {isLoading ? 'Analyzing...' : 'Analyze & Predict'}
           </Button>
         </CardContent>
@@ -250,7 +249,7 @@ export default function HomePage() {
             flaggedClauses={flaggedClauses}
             suggestions={suggestions}
             missingPoints={missingPoints}
-            legalForesight={legalForesight} // Pass foresight data
+            legalForesight={legalForesight}
           />
         )}
       </div>

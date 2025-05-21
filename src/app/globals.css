@@ -122,6 +122,9 @@ body {
   .bg-accent-light {
     background-color: hsl(var(--accent) / 0.1); /* Example: accent color with 10% opacity */
   }
+   .bg-primary-light { /* Added for primary subtle background */
+    background-color: hsl(var(--primary) / 0.05);
+  }
 }
 
 
@@ -131,25 +134,22 @@ body {
     print-color-adjust: exact !important;
     color: black !important;
     background-color: white !important;
-    font-size: 12pt;
+    font-size: 11pt; /* Adjusted font size for better fit */
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     height: auto !important;
-    overflow: visible !important; /* Allow content to flow */
+    overflow: visible !important;
   }
 
-  /* Hide everything by default for print */
   body > *:not(main.main-container-print-padding) {
     display: none !important;
   }
-  
-  /* General rule for things explicitly marked as no-print */
+
   .no-print, .no-print * {
     display: none !important;
   }
 
-  /* Make the main content area and its direct children visible and full-width */
   main.main-container-print-padding {
     display: block !important;
     visibility: visible !important;
@@ -158,17 +158,19 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     overflow: visible !important;
-    background-color: white !important; /* Ensure main background is white */
+    background-color: white !important;
   }
 
-  main.main-container-print-padding > div.max-w-4xl { /* Page container in page.tsx */
+  /* Target the direct child div of main, which is the page container */
+  main.main-container-print-padding > div.max-w-4xl {
     display: block !important;
     visibility: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 100% !important; /* Ensure it can use full width */
     overflow: visible !important;
+    background-color: white !important;
   }
 
   /* Hide children of the page container, except for the .printable-area */
@@ -180,64 +182,85 @@ body {
   .printable-area {
     display: block !important;
     visibility: visible !important;
-    position: static !important; /* Override any absolute/fixed positioning */
-    width: 100% !important;
-    margin: 0 auto !important; /* Center content if width is less than 100% */
-    padding: 1rem !important; /* Overall padding for the printed report */
+    position: static !important;
+    width: 100% !important; /* Full width of its parent */
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important; /* Remove padding from printable-area itself */
     box-shadow: none !important;
     border: none !important;
     overflow: visible !important;
-    background-color: white !important; /* Ensure printable area background is white */
+    background-color: white !important;
   }
 
-  /* Styling for elements within the .printable-area */
-  .printable-area .card-header,
-  .printable-area .card-content,
-  .printable-area .card-footer {
-    padding: 0.5rem !important; /* Reduced padding for card sections */
-  }
-  .printable-area .card { /* Ensure card itself has no extra print padding/margin if styles apply */
-    padding: 0 !important;
-    margin: 0 0 1rem 0 !important; /* Add some bottom margin between cards if multiple */
-    border: 1px solid #ddd !important; /* Give cards a light border for definition in print */
+  /* Styles for the main Card component inside .printable-area */
+  .printable-area > .card {
+    display: block !important;
+    visibility: visible !important;
+    padding: 1rem !important; /* Overall padding for the printed report content inside the card */
+    margin: 0 !important;
+    border: 1px solid #ccc !important;
     box-shadow: none !important;
-    page-break-inside: avoid !important; /* Try to keep card content together */
+    page-break-inside: avoid !important;
+    border-radius: 0 !important; /* Remove rounded corners for print if desired */
+    background-color: white !important;
   }
 
+  .printable-area .card-header,
+  .printable-area .card-content {
+    padding: 0.5rem !important;
+  }
+  .printable-area .card-header.border-b-2 { /* Specific for AnalysisDisplay header */
+     border-bottom-width: 1px !important; /* Thinner border for print */
+     border-color: #ddd !important;
+  }
+
+
+  /* Styling for elements within the .printable-area's card */
   .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area h5 {
     color: black !important;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0.8rem;
+    margin-bottom: 0.4rem;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
   }
+  .printable-area h1 { font-size: 18pt !important; }
+  .printable-area h3 { font-size: 14pt !important; } /* For SectionCard titles */
+  .printable-area h4 { font-size: 12pt !important; } /* For sub-headings within sections */
+
 
   .printable-area p, .printable-area li, .printable-area div:not(.card):not(.card-header):not(.card-content):not(.card-footer) {
      page-break-inside: avoid !important;
+     font-size: 10pt !important; /* Slightly smaller for content */
+     line-height: 1.4 !important;
   }
   .printable-area ul, .printable-area ol {
     list-style-position: inside !important;
-    margin-left: 1rem !important; /* Add some margin for lists */
+    margin-left: 1rem !important;
   }
 
-  .printable-area .text-primary {
+  .printable-area .text-primary,
+  .printable-area .text-primary\/90,
+  .printable-area .text-primary\/80,
+  .printable-area .text-primary\/60 { /* Handle Tailwind opacity classes */
     color: hsl(var(--primary)) !important;
   }
-  .printable-area .text-accent {
+  .printable-area .text-accent,
+  .printable-area .text-accent\/60 {
     color: hsl(var(--accent)) !important;
   }
+  .printable-area .bg-primary\/5, /* Handle Tailwind bg opacity classes */
   .printable-area .bg-accent-light {
-     background-color: hsl(var(--accent) / 0.05) !important;
-     border: 1px solid hsl(var(--accent) / 0.2) !important;
-     padding: 0.5rem !important; /* Add some padding to bg-accent-light areas */
-     border-radius: var(--radius-sm);
+     background-color: transparent !important; /* Remove subtle backgrounds for print */
+     border: 1px solid #eee !important; /* Light border for definition if needed */
+     padding: 0.5rem !important;
+     border-radius: 0 !important;
   }
-  .printable-area .text-accent-foreground, 
-  .printable-area .text-on-accent { 
-     color: hsl(var(--text-on-accent)) !important; 
+  .printable-area .text-on-accent {
+     color: black !important; /* Ensure text on accent areas is black for print */
   }
   .printable-area .text-muted-foreground {
-    color: #555 !important;
+    color: #444 !important; /* Darker muted text */
   }
   .printable-area .whitespace-pre-wrap {
     white-space: pre-wrap !important;
@@ -246,25 +269,55 @@ body {
   .printable-area img, .printable-area svg {
     max-width: 100% !important;
     height: auto !important;
-    display: block !important; /* Ensure images/SVGs are block for layout */
+    display: block !important;
+  }
+   .printable-area svg {
+    fill: black !important; /* Ensure SVGs print in black if they are single color */
+    color: black !important;
   }
   .printable-area .grid > * {
     max-width: 100%;
   }
   .printable-area hr[role="separator"],
-  .printable-area div[role="separator"] { 
-    background-color: #ccc !important;
-    border-color: #ccc !important;
+  .printable-area div[role="separator"],
+  .printable-area .separator {
+    background-color: #bbb !important;
+    border-color: #bbb !important;
     height: 1px !important;
-    margin: 1rem 0 !important; /* Add some space around separators */
+    margin: 0.8rem 0 !important;
   }
+  .printable-area .border,
   .printable-area .border-b,
   .printable-area .border-t,
   .printable-area .border-l,
   .printable-area .border-r,
-  .printable-area .border {
-    border-color: #ddd !important; /* Ensure borders are visible and not too faint */
+  .printable-area .border-primary\/20,
+  .printable-area .border-primary\/30,
+  .printable-area .border-accent\/30,
+  .printable-area .border-accent\/50,
+  .printable-area .border-accent\/60,
+  .printable-area .border-primary\/50,
+  .printable-area .border-primary\/60 {
+    border-color: #ddd !important;
   }
+  .printable-area .shadow-sm,
+  .printable-area .shadow-md,
+  .printable-area .shadow-lg,
+  .printable-area .shadow-xl {
+    box-shadow: none !important;
+  }
+  .printable-area .badge {
+    border: 1px solid #ccc !important;
+    background-color: #f0f0f0 !important;
+    color: black !important;
+    padding: 0.1rem 0.3rem !important;
+    font-size: 8pt !important;
+  }
+  .printable-area .badge[data-variant="destructive"] {
+    background-color: #fee2e2 !important; /* Light red for destructive badge */
+    border-color: #fca5a5 !important;
+  }
+
 
   /* Hide scrollbars in print */
   ::-webkit-scrollbar {
