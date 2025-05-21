@@ -1,61 +1,59 @@
 
 "use client";
 
-import { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+// import { useEffect } from 'react'; // Removed
+// import { useAuth } from '@/contexts/AuthContext'; // Removed
+// import { useRouter } from 'next/navigation'; // Removed
+// import { Button } from '@/components/ui/button'; // Removed, unless needed for other non-auth actions
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, LogOut, ShieldCheck } from 'lucide-react';
-import { LoadingIndicator } from '@/components/LoadingIndicator';
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Removed
+// import { User, LogOut, ShieldCheck } from 'lucide-react'; // Removed
+// import { LoadingIndicator } from '@/components/LoadingIndicator'; // Removed
 
 export default function ProfilePage() {
-  const { currentUser, logout, loading: authLoading } = useAuth();
-  const router = useRouter();
+  // const { currentUser, logout, loading: authLoading } = useAuth(); // Removed
+  // const router = useRouter(); // Removed
 
-  useEffect(() => {
-    if (!authLoading && !currentUser) {
-      router.push('/login');
-    }
-  }, [currentUser, authLoading, router]);
+  // useEffect(() => { // Removed
+  //   if (!authLoading && !currentUser) {
+  //     router.push('/login');
+  //   }
+  // }, [currentUser, authLoading, router]);
 
-  const handleLogout = async () => {
-    await logout();
-    // The logout function in AuthContext handles redirection to /login
-  };
+  // const handleLogout = async () => { // Removed
+  //   await logout();
+  // };
 
-  if (authLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingIndicator text="Loading profile..." />
-      </div>
-    );
-  }
+  // if (authLoading) { // Removed
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen">
+  //       <LoadingIndicator text="Loading profile..." />
+  //     </div>
+  //   );
+  // }
 
-  if (!currentUser) {
-    // This state should be brief as useEffect will redirect.
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingIndicator text="Redirecting to login..." />
-      </div>
-    );
-  }
+  // if (!currentUser) { // Removed
+  //   return (
+  //     <div className="flex justify-center items-center min-h-screen">
+  //       <LoadingIndicator text="Redirecting to login..." />
+  //     </div>
+  //   );
+  // }
 
-  const userInitial = currentUser.email ? currentUser.email.charAt(0).toUpperCase() : '?';
+  // const userInitial = currentUser.email ? currentUser.email.charAt(0).toUpperCase() : '?'; // Removed
 
   return (
     <div className="flex justify-center items-start pt-10 min-h-screen">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <Avatar className="mx-auto h-24 w-24 mb-4 border-2 border-primary p-1">
-            <AvatarImage src={`https://placehold.co/100x100.png?text=${userInitial}`} alt={currentUser.email || 'User'} data-ai-hint="user avatar" />
-            <AvatarFallback className="text-3xl bg-primary text-primary-foreground">{userInitial}</AvatarFallback>
-          </Avatar>
-          <CardTitle className="text-2xl">User Profile</CardTitle>
-          <CardDescription>Manage your account details.</CardDescription>
+          <CardTitle className="text-2xl">Profile Page</CardTitle>
+          <CardDescription>This page is a placeholder.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <p className="text-center text-muted-foreground">
+            User profile functionality will be implemented here.
+          </p>
+          {/*
           <div className="space-y-2">
             <div className="flex items-center text-sm">
               <User className="mr-2 h-5 w-5 text-primary" />
@@ -68,14 +66,14 @@ export default function ProfilePage() {
               <span className="ml-2 text-green-600">Verified</span>
             </div>
           </div>
-          
+
           <Button onClick={handleLogout} className="w-full" variant="destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </Button>
+          */}
         </CardContent>
       </Card>
     </div>
   );
 }
-

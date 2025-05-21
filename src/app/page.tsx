@@ -3,8 +3,8 @@
 
 import type { ChangeEvent } from 'react';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+// import { useAuth } from '@/contexts/AuthContext'; // Removed useAuth
+// import { useRouter } from 'next/navigation'; // Removed useRouter
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye, Zap } from 'lucide-react'; 
+import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2 } from 'lucide-react';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -24,8 +24,8 @@ import { Label } from '@/components/ui/label';
 
 
 export default function HomePage() {
-  const { currentUser, loading: authLoading } = useAuth();
-  const router = useRouter();
+  // const { currentUser, loading: authLoading } = useAuth(); // Removed useAuth
+  // const router = useRouter(); // Removed useRouter
 
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
@@ -41,11 +41,11 @@ export default function HomePage() {
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !currentUser) {
-      router.push('/login');
-    }
-  }, [currentUser, authLoading, router]);
+  // useEffect(() => { // Removed auth-related useEffect
+  //   if (!authLoading && !currentUser) {
+  //     router.push('/login');
+  //   }
+  // }, [currentUser, authLoading, router]);
 
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +85,7 @@ export default function HomePage() {
           variant: "destructive",
         });
         setFileName(null);
-        event.target.value = ""; 
+        event.target.value = "";
       }
     } else {
         setFileName(null);
@@ -125,7 +125,7 @@ export default function HomePage() {
     if (imageDataUri) {
       basePayload.photoDataUri = imageDataUri;
     }
-    
+
     try {
       const results = await Promise.allSettled([
         summarizeLegalDocument(basePayload as SummarizeLegalDocumentInput),
@@ -148,7 +148,7 @@ export default function HomePage() {
         console.error("Clause flagging failed:", clausesRes.reason);
          setError(prev => prev ? prev + "\nClause flagging failed." : "Clause flagging failed.");
       }
-      
+
       if (improvementsRes.status === 'fulfilled') setSuggestions(improvementsRes.value);
       else {
         console.error("Improvement suggestion failed:", improvementsRes.reason);
@@ -166,7 +166,7 @@ export default function HomePage() {
         console.error("Legal foresight analysis failed:", foresightRes.reason);
         setError(prev => prev ? prev + "\nLegal foresight analysis failed." : "Legal foresight analysis failed.");
       }
-      
+
       const allFailed = results.every(res => res.status === 'rejected');
       const anyFailed = results.some(res => res.status === 'rejected');
 
@@ -176,7 +176,7 @@ export default function HomePage() {
         setError(`All AI analyses failed. Errors: ${errorMessages}`);
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
       } else if (anyFailed) {
-         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Please check the report and error messages for details.", variant: "default" });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Check report and error messages.", variant: "default" });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -194,15 +194,13 @@ export default function HomePage() {
     window.print();
   };
 
-  if (authLoading) {
-    return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Loading application..." /></div>;
-  }
+  // if (authLoading) { // Removed auth loading check
+  //   return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Loading application..." /></div>;
+  // }
 
-  if (!currentUser) {
-    // This state should be brief as useEffect will redirect.
-    // Or, you might not even need to render anything here if redirection is fast enough.
-    return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Redirecting to login..." /></div>;
-  }
+  // if (!currentUser) { // Removed current user check
+  //   return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Redirecting to login..." /></div>;
+  // }
 
   const hasResults = summary || flaggedClauses || suggestions || missingPoints || legalForesight;
 
@@ -228,7 +226,7 @@ export default function HomePage() {
                   className="hidden"
                   disabled={isLoading}
                 />
-                <label 
+                <label
                   htmlFor="file-upload"
                   className="flex flex-col items-center justify-center p-8 border border-input rounded-lg text-center hover:border-primary/40 transition-colors cursor-pointer bg-card"
                 >
@@ -295,7 +293,7 @@ export default function HomePage() {
           </Alert>
         </div>
       )}
-      
+
       <div id="report-content" className="printable-area mt-8">
         {!isLoading && hasResults && (
            <div className="text-center mb-4 no-print">
@@ -311,7 +309,7 @@ export default function HomePage() {
            </div>
         )}
 
-        {!isLoading && ( 
+        {!isLoading && (
           <AnalysisDisplay
             fileName={fileName}
             summary={summary}
@@ -322,7 +320,7 @@ export default function HomePage() {
           />
         )}
       </div>
-      
+
       <footer className="text-center text-muted-foreground mt-12 py-4 text-xs no-print">
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
         <p>Please consult with a qualified legal professional for any legal matters.</p>
@@ -330,4 +328,3 @@ export default function HomePage() {
     </div>
   );
 }
-    
