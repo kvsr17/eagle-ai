@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -133,29 +134,41 @@ body {
     font-size: 12pt;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important; /* Allow content to flow */
   }
 
-  /* Hide everything in body by default for print */
-  body > * {
+  /* Hide everything by default for print */
+  body > *:not(main.main-container-print-padding) {
+    display: none !important;
+  }
+  
+  /* General rule for things explicitly marked as no-print */
+  .no-print, .no-print * {
     display: none !important;
   }
 
   /* Make the main content area and its direct children visible and full-width */
-  body > main,
   main.main-container-print-padding {
     display: block !important;
+    visibility: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    overflow: visible !important;
+    background-color: white !important; /* Ensure main background is white */
   }
 
   main.main-container-print-padding > div.max-w-4xl { /* Page container in page.tsx */
     display: block !important;
+    visibility: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    overflow: visible !important;
   }
 
   /* Hide children of the page container, except for the .printable-area */
@@ -167,18 +180,14 @@ body {
   .printable-area {
     display: block !important;
     visibility: visible !important;
-    position: static !important;
+    position: static !important; /* Override any absolute/fixed positioning */
     width: 100% !important;
-    margin: 0 !important;
+    margin: 0 auto !important; /* Center content if width is less than 100% */
     padding: 1rem !important; /* Overall padding for the printed report */
     box-shadow: none !important;
     border: none !important;
     overflow: visible !important;
-  }
-
-  /* General rule for things explicitly marked as no-print */
-  .no-print, .no-print * {
-    display: none !important;
+    background-color: white !important; /* Ensure printable area background is white */
   }
 
   /* Styling for elements within the .printable-area */
@@ -189,11 +198,11 @@ body {
   }
   .printable-area .card { /* Ensure card itself has no extra print padding/margin if styles apply */
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 0 1rem 0 !important; /* Add some bottom margin between cards if multiple */
     border: 1px solid #ddd !important; /* Give cards a light border for definition in print */
     box-shadow: none !important;
+    page-break-inside: avoid !important; /* Try to keep card content together */
   }
-
 
   .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area h5 {
     color: black !important;
@@ -203,11 +212,12 @@ body {
     page-break-inside: avoid !important;
   }
 
-  .printable-area p, .printable-area li, .printable-area div:not(.card) { /* Avoid breaking these elements if possible */
+  .printable-area p, .printable-area li, .printable-area div:not(.card):not(.card-header):not(.card-content):not(.card-footer) {
      page-break-inside: avoid !important;
   }
-  .printable-area ul {
+  .printable-area ul, .printable-area ol {
     list-style-position: inside !important;
+    margin-left: 1rem !important; /* Add some margin for lists */
   }
 
   .printable-area .text-primary {
@@ -222,9 +232,9 @@ body {
      padding: 0.5rem !important; /* Add some padding to bg-accent-light areas */
      border-radius: var(--radius-sm);
   }
-  .printable-area .text-accent-foreground, /* Should be light on dark accent */
-  .printable-area .text-on-accent { /* Should be dark on light accent */
-     color: hsl(var(--text-on-accent)) !important; /* Standardize to dark text for print on light accent */
+  .printable-area .text-accent-foreground, 
+  .printable-area .text-on-accent { 
+     color: hsl(var(--text-on-accent)) !important; 
   }
   .printable-area .text-muted-foreground {
     color: #555 !important;
@@ -236,15 +246,17 @@ body {
   .printable-area img, .printable-area svg {
     max-width: 100% !important;
     height: auto !important;
+    display: block !important; /* Ensure images/SVGs are block for layout */
   }
   .printable-area .grid > * {
     max-width: 100%;
   }
   .printable-area hr[role="separator"],
-  .printable-area div[role="separator"] { /* Targeting ShadCN Separator */
+  .printable-area div[role="separator"] { 
     background-color: #ccc !important;
     border-color: #ccc !important;
     height: 1px !important;
+    margin: 1rem 0 !important; /* Add some space around separators */
   }
   .printable-area .border-b,
   .printable-area .border-t,
@@ -252,5 +264,13 @@ body {
   .printable-area .border-r,
   .printable-area .border {
     border-color: #ddd !important; /* Ensure borders are visible and not too faint */
+  }
+
+  /* Hide scrollbars in print */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  * {
+    scrollbar-width: none !important; /* For Firefox */
   }
 }

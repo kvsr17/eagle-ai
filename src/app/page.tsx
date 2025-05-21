@@ -218,14 +218,16 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      {isLoading && <LoadingIndicator text="Generating insights & predictions..." />}
+      {isLoading && <div className="no-print"><LoadingIndicator text="Generating insights & predictions..." /></div>}
 
       {error && !isLoading && (
-        <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error During Analysis</AlertTitle>
-          <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
-        </Alert>
+        <div className="no-print">
+          <Alert variant="destructive" className="mt-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error During Analysis</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
+          </Alert>
+        </div>
       )}
       
       <div id="report-content" className="printable-area">
