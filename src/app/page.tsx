@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, Zap } from 'lucide-react'; 
+import { FileDown, AlertCircle, Printer, Scale, FileText, AlertTriangle, TrendingUp } from 'lucide-react'; 
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -178,50 +178,81 @@ export default function HomePage() {
   const hasResults = summary || flaggedClauses || suggestions || missingPoints || legalForesight;
 
   return (
-    <div className="max-w-4xl mx-auto w-full">
-      <Card className="shadow-xl no-print">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
-            <Zap size={32} /> LegalForesight AI
-          </CardTitle>
-          <CardDescription>
-            Upload your legal document (.txt, .pdf, .png, .jpg, .jpeg) for AI-powered predictive analysis, summaries, critical clause flags, and improvement suggestions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <label htmlFor="file-upload" className="block text-sm font-medium text-foreground mb-1">
-              Upload Document (.txt, .pdf, .png, .jpg, .jpeg)
-            </label>
-            <Input
-              id="file-upload"
-              type="file"
-              accept=".txt,.pdf,.png,.jpg,.jpeg"
-              onChange={handleFileChange}
-              className="file:text-primary file:font-semibold hover:file:bg-primary/10"
-              disabled={isLoading}
-            />
-            {fileName && (
-               <p className="text-sm text-green-600 mt-2">Selected: {fileName}</p>
+    <div className="w-full">
+      <div className="max-w-md mx-auto w-full no-print">
+        <Card className="shadow-lg rounded-xl border border-primary/20">
+          <CardHeader className="pt-6 pb-4">
+            <div className="flex items-center justify-center space-x-2">
+              <Scale size={36} className="text-primary" />
+              <CardTitle className="text-3xl font-bold text-primary">LegalForesight AI</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 px-6 pb-6">
+            <div >
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".txt,.pdf,.png,.jpg,.jpeg"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={isLoading}
+              />
+              <label 
+                htmlFor="file-upload"
+                className="block p-6 border-2 border-primary/30 rounded-lg text-center hover:border-primary transition-colors cursor-pointer bg-primary/10"
+              >
+                <FileDown size={40} className="mx-auto text-primary mb-2" />
+                <p className="text-lg font-semibold text-primary">Upload Document</p>
+                <p className="text-sm text-muted-foreground">or drop a file here</p>
+              </label>
+              {fileName && (
+                <p className="text-sm text-green-600 mt-2 text-center">Selected: {fileName}</p>
+              )}
+            </div>
+
+            {!isLoading && !hasResults && (
+              <div className="space-y-4 mt-6">
+                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
+                  <FileText size={24} className="text-primary mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Document Summary</h3>
+                    <p className="text-xs text-muted-foreground">Read a concise, lawyer-like summary of the document</p>
+                  </div>
+                </div>
+                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
+                  <AlertTriangle size={24} className="text-primary mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Risk Assessment</h3>
+                    <p className="text-xs text-muted-foreground">Identify potential legal risks and issues present</p>
+                  </div>
+                </div>
+                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
+                  <TrendingUp size={24} className="text-primary mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Outcome Prediction</h3>
+                    <p className="text-xs text-muted-foreground">Forecast possible outcomes and legal implications</p>
+                  </div>
+                </div>
+              </div>
             )}
-          </div>
-          <Button
-            onClick={processDocument}
-            disabled={(!documentText && !imageDataUri) || isLoading}
-            className="w-full text-lg py-6"
-            size="lg"
-          >
-            <Zap className="mr-2 h-5 w-5" /> {/* Added Zap icon here */}
-            {isLoading ? 'Analyzing...' : 'Analyze & Predict'}
-          </Button>
-        </CardContent>
-      </Card>
+
+            <Button
+              onClick={processDocument}
+              disabled={(!documentText && !imageDataUri && !fileName) || isLoading}
+              className="w-full text-lg py-3"
+              size="lg"
+            >
+              {isLoading ? 'Analyzing...' : (fileName ? 'Analyze Document' : 'Upload')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
       {isLoading && <div className="no-print"><LoadingIndicator text="Generating insights & predictions..." /></div>}
 
       {error && !isLoading && (
-        <div className="no-print">
-          <Alert variant="destructive" className="mt-6">
+        <div className="no-print mt-6 max-w-md mx-auto">
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error During Analysis</AlertTitle>
             <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
@@ -229,17 +260,19 @@ export default function HomePage() {
         </div>
       )}
       
-      <div id="report-content" className="printable-area">
+      <div id="report-content" className="printable-area mt-6">
         {!isLoading && hasResults && (
-           <Button
-            onClick={handlePrint}
-            variant="outline"
-            className="mt-6 mb-4 no-print w-full md:w-auto"
-            size="lg"
-          >
-            <Printer className="mr-2 h-5 w-5" />
-            Download Full Report as PDF
-          </Button>
+           <div className="text-center mb-4 no-print">
+             <Button
+                onClick={handlePrint}
+                variant="outline"
+                className="w-full md:w-auto"
+                size="lg"
+              >
+                <Printer className="mr-2 h-5 w-5" />
+                Download Full Report as PDF
+              </Button>
+           </div>
         )}
 
         {!isLoading && ( 
@@ -260,4 +293,5 @@ export default function HomePage() {
       </footer>
     </div>
   );
-}
+
+    
