@@ -11,6 +11,11 @@ import {
   TrendingUp, 
   ListChecks, 
   Zap, 
+  Briefcase,
+  Users,
+  CalendarDays,
+  CircleDollarSign,
+  Tag,
 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import type { SummarizeLegalDocumentOutput } from '@/ai/flows/summarize-legal-document';
@@ -39,14 +44,13 @@ export function AnalysisDisplay({
   missingPoints,
   legalForesight,
 }: AnalysisDisplayProps) {
-  const hasContent = summary?.summary || 
+  const hasContent = summary?.overallSummary || 
                      (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
                      (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
                      (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) ||
                      (legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0));
 
   if (!fileName && !hasContent) {
-    // Show this message if no file has been processed yet
     return (
       <Card className="mt-6 shadow-lg border-primary/20">
         <CardHeader className="pb-4 border-b-2 border-primary bg-primary/5 rounded-t-lg">
@@ -69,7 +73,6 @@ export function AnalysisDisplay({
   }
   
   if (fileName && !hasContent) {
-    // Show this if a file was processed but yielded no results from any analysis
      return (
       <Card className="mt-6 shadow-lg border-primary/20">
         <CardHeader className="pb-4 border-b-2 border-primary bg-primary/5 rounded-t-lg">
@@ -98,7 +101,6 @@ export function AnalysisDisplay({
     );
   }
 
-
   const getRiskBadgeVariant = (riskAssessment: string | undefined) => {
     if (!riskAssessment) return "secondary";
     const lowerRisk = riskAssessment.toLowerCase();
@@ -107,6 +109,23 @@ export function AnalysisDisplay({
     if (lowerRisk.includes("low")) return "secondary"; 
     return "outline";
   };
+
+  const renderList = (items: string[] | undefined, emptyMessage: string, icon?: React.ReactNode) => {
+    if (!items || items.length === 0 || (items.length === 1 && items[0]?.toLowerCase() === "not specified")) {
+      return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
+    }
+    return (
+      <ul className="space-y-2 list-disc list-inside pl-2">
+        {items.map((item, index) => (
+          <li key={index} className="text-foreground/90 marker:text-primary leading-relaxed flex items-start gap-2">
+            {icon && <span className="mt-1">{icon}</span>}
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
 
   return (
     <Card className="mt-6 shadow-lg border-primary/20"> 
@@ -190,24 +209,58 @@ export function AnalysisDisplay({
               accentHighlight={false} 
               className="border-2 border-primary/30 p-6 rounded-lg bg-primary/5 shadow-md"
             >
-              <p className="text-muted-foreground">Legal foresight analysis was not performed or yielded no results.</p>
+              <p className="text-muted-foreground">Legal foresight analysis was not performed or yielded no results for this document.</p>
             </SectionCard>
           )}
           
-          { (legalForesight && (summary?.summary || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0) || (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) )) && <Separator className="my-8 border-primary/20"/>}
+          { (hasContent) && <Separator className="my-8 border-primary/20"/>}
 
-
-          {summary?.summary ? (
-            <SectionCard title="I. Document Summary" icon={<Search size={28} />}>
-              <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{summary.summary}</p>
+          {summary ? (
+            <SectionCard title="I. Document Breakdown" icon={<Search size={28} />}>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <FileText size={20} /> Overall Summary
+                  </h4>
+                  <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{summary.overallSummary || "No overall summary provided."}</p>
+                </div>
+                <Separator/>
+                <div>
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <Users size={20} /> Involved Parties
+                  </h4>
+                  {renderList(summary.involvedParties, "No specific parties identified.", <Users size={16} className="text-muted-foreground"/>)}
+                </div>
+                 <Separator/>
+                <div>
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <Briefcase size={20} /> Key Obligations
+                  </h4>
+                  {renderList(summary.keyObligations, "No specific key obligations identified.", <Briefcase size={16} className="text-muted-foreground"/>)}
+                </div>
+                 <Separator/>
+                <div>
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <CircleDollarSign size={20} /> Financial Terms
+                  </h4>
+                  {renderList(summary.financialTerms, "No specific financial terms identified.", <CircleDollarSign size={16} className="text-muted-foreground"/>)}
+                </div>
+                 <Separator/>
+                <div>
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <CalendarDays size={20} /> Key Dates & Durations
+                  </h4>
+                  {renderList(summary.keyDates, "No specific key dates or durations identified.", <CalendarDays size={16} className="text-muted-foreground"/>)}
+                </div>
+              </div>
             </SectionCard>
           ) : (
-            <SectionCard title="I. Document Summary" icon={<Search size={28} />}>
-              <p className="text-muted-foreground">No summary was generated for this document.</p>
+            <SectionCard title="I. Document Breakdown" icon={<Search size={28} />}>
+              <p className="text-muted-foreground">No summary breakdown was generated for this document.</p>
             </SectionCard>
           )}
 
-          {(summary?.summary) && <Separator className="my-6" />}
+          {(summary) && <Separator className="my-6" />}
 
           {flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0 ? (
             <SectionCard title="II. Critical Clause Flags" icon={<AlertTriangle size={28} />} accentHighlight>
@@ -215,13 +268,25 @@ export function AnalysisDisplay({
                 {flaggedClauses.criticalClauses.map((clause, index) => (
                   <li key={index} className="p-4 border border-accent/30 rounded-lg bg-accent-light shadow-sm hover:shadow-md transition-shadow">
                     <h4 className="font-semibold text-on-accent mb-1 flex items-center">
-                      <ChevronRight size={20} className="mr-1 text-accent" /> Clause Identified:
+                      <ChevronRight size={20} className="mr-1 text-accent" /> Clause Text:
                     </h4>
-                    <p className="italic text-foreground/80 mb-1 ml-3">"{clause.clauseText}"</p>
+                    <p className="italic text-foreground/80 mb-2 ml-3">"{clause.clauseText}"</p>
                      <h5 className="font-semibold text-on-accent mt-2 mb-1 flex items-center">
                       <AlertTriangle size={18} className="mr-1 text-accent" /> Reason for Flag:
                     </h5>
-                    <p className="text-sm text-foreground/70 ml-3">{clause.reason}</p>
+                    <p className="text-sm text-foreground/70 ml-3 mb-2">{clause.reason}</p>
+                    {clause.riskTags && clause.riskTags.length > 0 && (
+                      <>
+                        <h5 className="font-semibold text-on-accent mt-2 mb-1 flex items-center">
+                          <Tag size={18} className="mr-1 text-accent" /> Associated Risk Tags:
+                        </h5>
+                        <div className="ml-3 flex flex-wrap gap-2">
+                          {clause.riskTags.map(tag => (
+                            <Badge key={tag} variant="outline" className="text-xs border-accent/50 text-accent bg-accent/10">{tag}</Badge>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -232,7 +297,7 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
 
-          {((summary?.summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0)) && <Separator className="my-6" />}
+          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0)) && <Separator className="my-6" />}
 
           {suggestions?.suggestions && suggestions.suggestions.length > 0 ? (
             <SectionCard title="III. Improvement Suggestions" icon={<Lightbulb size={28} />} accentHighlight>
@@ -248,7 +313,7 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
 
-          {((summary?.summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-6" />}
+          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-6" />}
           
           {missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary) ? (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
@@ -281,7 +346,7 @@ export function AnalysisDisplay({
             </SectionCard>
           ) : (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
-              <p className="text-muted-foreground">Missing points analysis was not performed or yielded no results.</p>
+              <p className="text-muted-foreground">Missing points analysis was not performed or yielded no results for this document.</p>
             </SectionCard>
           )}
 
@@ -313,5 +378,3 @@ export function AnalysisDisplay({
     </Card>
   );
 }
-
-    
