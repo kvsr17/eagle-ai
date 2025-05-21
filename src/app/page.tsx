@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle } from 'lucide-react';
+import { FileUp, AlertCircle, Printer } from 'lucide-react';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -167,9 +167,15 @@ export default function HomePage() {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const hasResults = summary || flaggedClauses || suggestions || missingPoints;
+
   return (
     <div className="max-w-4xl mx-auto w-full">
-      <Card className="shadow-xl">
+      <Card className="shadow-xl no-print">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary flex items-center gap-2">
             <FileUp size={32} /> AI Document Reviewer
@@ -215,18 +221,32 @@ export default function HomePage() {
           <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
         </Alert>
       )}
-
-      {!isLoading && ( // Display analysis results if not loading, regardless of minor errors if some results are present
-        <AnalysisDisplay
-          fileName={fileName}
-          summary={summary}
-          flaggedClauses={flaggedClauses}
-          suggestions={suggestions}
-          missingPoints={missingPoints}
-        />
-      )}
       
-      <footer className="text-center text-muted-foreground mt-12 py-4 text-xs">
+      <div id="report-content" className="printable-area">
+        {!isLoading && hasResults && (
+           <Button
+            onClick={handlePrint}
+            variant="outline"
+            className="mt-6 mb-4 no-print w-full md:w-auto"
+            size="lg"
+          >
+            <Printer className="mr-2 h-5 w-5" />
+            Download Legal Summary as PDF
+          </Button>
+        )}
+
+        {!isLoading && ( 
+          <AnalysisDisplay
+            fileName={fileName}
+            summary={summary}
+            flaggedClauses={flaggedClauses}
+            suggestions={suggestions}
+            missingPoints={missingPoints}
+          />
+        )}
+      </div>
+      
+      <footer className="text-center text-muted-foreground mt-12 py-4 text-xs no-print">
         <p>&copy; {new Date().getFullYear()} LegalEagle AI. For informational purposes only. Not legal advice.</p>
         <p>Please consult with a qualified legal professional for any legal matters.</p>
       </footer>
