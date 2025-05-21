@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileDown, AlertCircle, Printer, Scale, FileText, AlertTriangle, TrendingUp } from 'lucide-react'; 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileUp, AlertCircle, Printer, ScanEye } from 'lucide-react'; 
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -121,31 +121,31 @@ export default function HomePage() {
       if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
       else {
         console.error("Summarization failed:", summaryRes.reason);
-        setError(prev => prev ? prev + "\nSummarization failed." : "Summarization failed.");
+        setError(prev => prev ? prev + "\\nSummarization failed." : "Summarization failed.");
       }
 
       if (clausesRes.status === 'fulfilled') setFlaggedClauses(clausesRes.value);
       else {
         console.error("Clause flagging failed:", clausesRes.reason);
-         setError(prev => prev ? prev + "\nClause flagging failed." : "Clause flagging failed.");
+         setError(prev => prev ? prev + "\\nClause flagging failed." : "Clause flagging failed.");
       }
       
       if (improvementsRes.status === 'fulfilled') setSuggestions(improvementsRes.value);
       else {
         console.error("Improvement suggestion failed:", improvementsRes.reason);
-        setError(prev => prev ? prev + "\nImprovement suggestion failed." : "Improvement suggestion failed.");
+        setError(prev => prev ? prev + "\\nImprovement suggestion failed." : "Improvement suggestion failed.");
       }
 
       if (missingPointsRes.status === 'fulfilled') setMissingPoints(missingPointsRes.value);
       else {
          console.error("Missing points analysis failed:", missingPointsRes.reason);
-         setError(prev => prev ? prev + "\nMissing points analysis failed." : "Missing points analysis failed.");
+         setError(prev => prev ? prev + "\\nMissing points analysis failed." : "Missing points analysis failed.");
       }
 
       if (foresightRes.status === 'fulfilled') setLegalForesight(foresightRes.value);
       else {
         console.error("Legal foresight analysis failed:", foresightRes.reason);
-        setError(prev => prev ? prev + "\nLegal foresight analysis failed." : "Legal foresight analysis failed.");
+        setError(prev => prev ? prev + "\\nLegal foresight analysis failed." : "Legal foresight analysis failed.");
       }
       
       const allFailed = results.every(res => res.status === 'rejected');
@@ -181,14 +181,15 @@ export default function HomePage() {
     <div className="w-full">
       <div className="max-w-md mx-auto w-full no-print">
         <Card className="shadow-lg rounded-xl border border-primary/20">
-          <CardHeader className="pt-6 pb-4">
-            <div className="flex items-center justify-center space-x-2">
-              <Scale size={36} className="text-primary" />
-              <CardTitle className="text-3xl font-bold text-primary">LegalForesight AI</CardTitle>
+          <CardHeader className="pt-6 pb-4 text-center">
+            <div className="inline-flex items-center gap-2">
+              <ScanEye size={28} className="text-primary" />
+              <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-6">
-            <div >
+            <h2 className="text-3xl font-bold text-center text-foreground">Upload Document</h2>
+            <div>
               <Input
                 id="file-upload"
                 type="file"
@@ -199,42 +200,18 @@ export default function HomePage() {
               />
               <label 
                 htmlFor="file-upload"
-                className="block p-6 border-2 border-primary/30 rounded-lg text-center hover:border-primary transition-colors cursor-pointer bg-primary/10"
+                className="flex flex-col items-center justify-center p-8 border border-input rounded-lg text-center hover:border-primary/40 transition-colors cursor-pointer bg-card"
               >
-                <FileDown size={40} className="mx-auto text-primary mb-2" />
-                <p className="text-lg font-semibold text-primary">Upload Document</p>
+                <div className="p-4 bg-primary/10 rounded-lg mb-3">
+                  <FileUp size={36} className="text-primary" />
+                </div>
+                <p className="text-base font-semibold text-foreground">Upload Document</p>
                 <p className="text-sm text-muted-foreground">or drop a file here</p>
               </label>
               {fileName && (
-                <p className="text-sm text-green-600 mt-2 text-center">Selected: {fileName}</p>
+                <p className="text-sm text-green-600 mt-3 text-center">Selected: {fileName}</p>
               )}
             </div>
-
-            {!isLoading && !hasResults && (
-              <div className="space-y-4 mt-6">
-                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
-                  <FileText size={24} className="text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-primary">Document Summary</h3>
-                    <p className="text-xs text-muted-foreground">Read a concise, lawyer-like summary of the document</p>
-                  </div>
-                </div>
-                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
-                  <AlertTriangle size={24} className="text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-primary">Risk Assessment</h3>
-                    <p className="text-xs text-muted-foreground">Identify potential legal risks and issues present</p>
-                  </div>
-                </div>
-                <div className="flex items-start p-3 border border-primary/20 rounded-lg space-x-3 bg-card shadow-sm">
-                  <TrendingUp size={24} className="text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-primary">Outcome Prediction</h3>
-                    <p className="text-xs text-muted-foreground">Forecast possible outcomes and legal implications</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <Button
               onClick={processDocument}
@@ -260,7 +237,7 @@ export default function HomePage() {
         </div>
       )}
       
-      <div id="report-content" className="printable-area mt-6">
+      <div id="report-content" className="printable-area mt-8">
         {!isLoading && hasResults && (
            <div className="text-center mb-4 no-print">
              <Button
@@ -293,5 +270,5 @@ export default function HomePage() {
       </footer>
     </div>
   );
-
+}
     
