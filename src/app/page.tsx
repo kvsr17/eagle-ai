@@ -3,8 +3,6 @@
 
 import type { ChangeEvent } from 'react';
 import { useState, useEffect } from 'react';
-// import { useAuth } from '@/contexts/AuthContext'; // Removed useAuth
-// import { useRouter } from 'next/navigation'; // Removed useRouter
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +11,7 @@ import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2 } from 'lucide-react';
+import { ChatInterface } from '@/components/ChatInterface';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -24,9 +23,6 @@ import { Label } from '@/components/ui/label';
 
 
 export default function HomePage() {
-  // const { currentUser, loading: authLoading } = useAuth(); // Removed useAuth
-  // const router = useRouter(); // Removed useRouter
-
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -40,12 +36,6 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<SuggestImprovementsOutput | null>(null);
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
-
-  // useEffect(() => { // Removed auth-related useEffect
-  //   if (!authLoading && !currentUser) {
-  //     router.push('/login');
-  //   }
-  // }, [currentUser, authLoading, router]);
 
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -194,14 +184,6 @@ export default function HomePage() {
     window.print();
   };
 
-  // if (authLoading) { // Removed auth loading check
-  //   return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Loading application..." /></div>;
-  // }
-
-  // if (!currentUser) { // Removed current user check
-  //   return <div className="flex justify-center items-center min-h-screen no-print"><LoadingIndicator text="Redirecting to login..." /></div>;
-  // }
-
   const hasResults = summary || flaggedClauses || suggestions || missingPoints || legalForesight;
 
   return (
@@ -282,7 +264,7 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {isLoading && <div className="no-print"><LoadingIndicator text="Generating insights & predictions..." /></div>}
+      {isLoading && <div className="no-print mt-6"><LoadingIndicator text="Generating insights & predictions..." /></div>}
 
       {error && !isLoading && (
         <div className="no-print mt-6 max-w-lg mx-auto">
@@ -320,6 +302,16 @@ export default function HomePage() {
           />
         )}
       </div>
+
+      {!isLoading && hasResults && (documentText || imageDataUri) && fileName && (
+        <div className="mt-8 no-print">
+          <ChatInterface
+            documentText={documentText}
+            imageDataUri={imageDataUri}
+            fileName={fileName}
+          />
+        </div>
+      )}
 
       <footer className="text-center text-muted-foreground mt-12 py-4 text-xs no-print">
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
