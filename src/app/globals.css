@@ -134,7 +134,7 @@ body {
     print-color-adjust: exact !important;
     color: black !important;
     background-color: white !important;
-    font-size: 11pt; /* Adjusted font size for better fit */
+    font-size: 11pt !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
@@ -142,14 +142,17 @@ body {
     overflow: visible !important;
   }
 
-  body > *:not(main.main-container-print-padding) {
-    display: none !important;
-  }
-
+  /* Hide elements not intended for printing */
   .no-print, .no-print * {
     display: none !important;
   }
 
+  /* Hide direct children of body, except for the main content container */
+  body > *:not(main.main-container-print-padding) {
+    display: none !important;
+  }
+
+  /* Style the main container itself */
   main.main-container-print-padding {
     display: block !important;
     visibility: visible !important;
@@ -161,20 +164,20 @@ body {
     background-color: white !important;
   }
 
-  /* Target the direct child div of main, which is the page container */
-  main.main-container-print-padding > div.max-w-4xl {
+  /* Target the root div of HomePage (child of main.main-container-print-padding) */
+  main.main-container-print-padding > div.w-full {
     display: block !important;
     visibility: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
-    max-width: 100% !important; /* Ensure it can use full width */
+    max-width: 100% !important;
     overflow: visible !important;
     background-color: white !important;
   }
 
-  /* Hide children of the page container, except for the .printable-area */
-  main.main-container-print-padding > div.max-w-4xl > *:not(.printable-area) {
+  /* Hide children of the HomePage root div, except for the .printable-area */
+  main.main-container-print-padding > div.w-full > *:not(.printable-area) {
     display: none !important;
   }
 
@@ -183,26 +186,26 @@ body {
     display: block !important;
     visibility: visible !important;
     position: static !important;
-    width: 100% !important; /* Full width of its parent */
+    width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 0 !important; /* Remove padding from printable-area itself */
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     overflow: visible !important;
     background-color: white !important;
   }
 
-  /* Styles for the main Card component inside .printable-area */
+  /* Styles for the main Card component inside .printable-area (this is the root of AnalysisDisplay) */
   .printable-area > .card {
     display: block !important;
     visibility: visible !important;
-    padding: 1rem !important; /* Overall padding for the printed report content inside the card */
+    padding: 1rem !important;
     margin: 0 !important;
     border: 1px solid #ccc !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
-    border-radius: 0 !important; /* Remove rounded corners for print if desired */
+    border-radius: 0 !important;
     background-color: white !important;
   }
 
@@ -210,11 +213,10 @@ body {
   .printable-area .card-content {
     padding: 0.5rem !important;
   }
-  .printable-area .card-header.border-b-2 { /* Specific for AnalysisDisplay header */
-     border-bottom-width: 1px !important; /* Thinner border for print */
+  .printable-area .card-header.border-b-2 {
+     border-bottom-width: 1px !important;
      border-color: #ddd !important;
   }
-
 
   /* Styling for elements within the .printable-area's card */
   .printable-area h1, .printable-area h2, .printable-area h3, .printable-area h4, .printable-area h5 {
@@ -225,13 +227,12 @@ body {
     page-break-inside: avoid !important;
   }
   .printable-area h1 { font-size: 18pt !important; }
-  .printable-area h3 { font-size: 14pt !important; } /* For SectionCard titles */
-  .printable-area h4 { font-size: 12pt !important; } /* For sub-headings within sections */
-
+  .printable-area h3 { font-size: 14pt !important; }
+  .printable-area h4 { font-size: 12pt !important; }
 
   .printable-area p, .printable-area li, .printable-area div:not(.card):not(.card-header):not(.card-content):not(.card-footer) {
      page-break-inside: avoid !important;
-     font-size: 10pt !important; /* Slightly smaller for content */
+     font-size: 10pt !important;
      line-height: 1.4 !important;
   }
   .printable-area ul, .printable-area ol {
@@ -242,25 +243,26 @@ body {
   .printable-area .text-primary,
   .printable-area .text-primary\/90,
   .printable-area .text-primary\/80,
-  .printable-area .text-primary\/60 { /* Handle Tailwind opacity classes */
+  .printable-area .text-primary\/60 {
     color: hsl(var(--primary)) !important;
   }
   .printable-area .text-accent,
   .printable-area .text-accent\/60 {
     color: hsl(var(--accent)) !important;
   }
-  .printable-area .bg-primary\/5, /* Handle Tailwind bg opacity classes */
+  .printable-area .bg-primary\/5,
+  .printable-area .bg-primary-light, /* ensure this new class is also handled */
   .printable-area .bg-accent-light {
-     background-color: transparent !important; /* Remove subtle backgrounds for print */
-     border: 1px solid #eee !important; /* Light border for definition if needed */
+     background-color: transparent !important;
+     border: 1px solid #eee !important;
      padding: 0.5rem !important;
      border-radius: 0 !important;
   }
   .printable-area .text-on-accent {
-     color: black !important; /* Ensure text on accent areas is black for print */
+     color: black !important;
   }
   .printable-area .text-muted-foreground {
-    color: #444 !important; /* Darker muted text */
+    color: #444 !important;
   }
   .printable-area .whitespace-pre-wrap {
     white-space: pre-wrap !important;
@@ -272,7 +274,7 @@ body {
     display: block !important;
   }
    .printable-area svg {
-    fill: black !important; /* Ensure SVGs print in black if they are single color */
+    fill: black !important;
     color: black !important;
   }
   .printable-area .grid > * {
@@ -314,10 +316,9 @@ body {
     font-size: 8pt !important;
   }
   .printable-area .badge[data-variant="destructive"] {
-    background-color: #fee2e2 !important; /* Light red for destructive badge */
+    background-color: #fee2e2 !important;
     border-color: #fca5a5 !important;
   }
-
 
   /* Hide scrollbars in print */
   ::-webkit-scrollbar {
