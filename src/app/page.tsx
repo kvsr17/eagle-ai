@@ -3,8 +3,8 @@
 
 import type { ChangeEvent } from 'react';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext'; // Added useAuth
-import { useRouter } from 'next/navigation'; // Added useRouter
+// import { useAuth } from '@/contexts/AuthContext'; // Removed useAuth
+// import { useRouter } from 'next/navigation'; // Removed useRouter if only used for auth redirects
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2 } from 'lucide-react';
+import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Scale } from 'lucide-react'; // Added Scale
 import { ChatInterface } from '@/components/ChatInterface';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
@@ -25,8 +25,8 @@ import { Label } from '@/components/ui/label';
 
 
 export default function HomePage() {
-  const { currentUser, loading: authLoading } = useAuth(); // Auth hook
-  const router = useRouter(); // Router hook
+  // const { currentUser, loading: authLoading } = useAuth(); // Removed Auth hook
+  // const router = useRouter(); // Removed Router hook
 
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
@@ -42,22 +42,22 @@ export default function HomePage() {
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !currentUser) {
-      router.push('/login');
-    }
-  }, [currentUser, authLoading, router]);
+  // useEffect(() => { // Removed auth-related effect
+  //   if (!authLoading && !currentUser) {
+  //     router.push('/login');
+  //   }
+  // }, [currentUser, authLoading, router]);
 
-  if (authLoading || !currentUser) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] py-12">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">
-            {authLoading ? "Loading application..." : "Redirecting to login..."}
-        </p>
-      </div>
-    );
-  }
+  // if (authLoading || !currentUser) { // Removed auth-related loading/redirect state
+  //   return (
+  //     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] py-12">
+  //       <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+  //       <p className="text-muted-foreground">
+  //           {authLoading ? "Loading application..." : "Redirecting to login..."}
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -96,7 +96,7 @@ export default function HomePage() {
           variant: "destructive",
         });
         setFileName(null);
-        event.target.value = "";
+        event.target.value = ""; // Clear the input
       }
     } else {
         setFileName(null);
@@ -183,11 +183,11 @@ export default function HomePage() {
 
       if (allFailed) {
         const errorMessages = results
-          .filter(res => res.status === 'rejected').map(res => (res as PromiseRejectedResult).reason?.message || (res as PromiseRejectedResult).reason?.toString() || "Unknown error").join('; ');
-        setError(`All AI analyses failed. Errors: ${errorMessages}`);
+          .filter(res => res.status === 'rejected').map(res => (res as PromiseRejectedResult).reason?.message || (res as PromiseRejectedResult).reason?.toString() || "Unknown error").join('\n');
+        setError(`All AI analyses failed. Errors:\n${errorMessages}`);
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
       } else if (anyFailed) {
-         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Check report and error messages.", variant: "default" });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Check report for details and potential error messages.", variant: "default" });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -210,7 +210,7 @@ export default function HomePage() {
   return (
     <div className="w-full">
       <div className="max-w-md mx-auto w-full no-print">
-        <Card className="shadow-lg rounded-xl border border-primary/20">
+        <Card className="shadow-lg rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
             <div className="inline-flex items-center gap-2 mx-auto">
               <ScanEye size={28} className="text-primary" />

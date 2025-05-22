@@ -2,8 +2,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-// import { Navbar } from '@/components/Navbar'; // Removed Navbar import
-import { AuthProvider } from '@/contexts/AuthContext';
+// import { AuthProvider } from '@/contexts/AuthContext'; // Removed AuthProvider import
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -29,15 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
-        <AuthProvider>
-          {/* <Navbar /> */} {/* Removed Navbar instance */}
+        {/* <AuthProvider> */} {/* Removed AuthProvider wrapper */}
           <main className="flex-grow container mx-auto px-4 py-8 main-container-print-padding">
             {children}
           </main>
           <div className="no-print">
             <Toaster />
           </div>
-        </AuthProvider>
+        {/* </AuthProvider> */}
       </body>
     </html>
   );
