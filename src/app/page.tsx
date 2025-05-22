@@ -3,6 +3,8 @@
 
 import type { ChangeEvent } from 'react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext'; // Added useAuth
+import { useRouter } from 'next/navigation'; // Added useRouter
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,6 +25,9 @@ import { Label } from '@/components/ui/label';
 
 
 export default function HomePage() {
+  const { currentUser, loading: authLoading } = useAuth(); // Auth hook
+  const router = useRouter(); // Router hook
+
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -37,6 +42,22 @@ export default function HomePage() {
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, authLoading, router]);
+
+  if (authLoading || !currentUser) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">
+            {authLoading ? "Loading application..." : "Redirecting to login..."}
+        </p>
+      </div>
+    );
+  }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

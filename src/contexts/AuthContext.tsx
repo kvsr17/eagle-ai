@@ -11,9 +11,9 @@ import {
   signOut,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { app } from '@/lib/firebase'; // Ensure your Firebase app is initialized and exported from here
+import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast'; // Ensure useToast hook is correctly set up
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   currentUser: FirebaseUser | null;
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(user);
       setLoading(false);
     });
-    return () => unsubscribe(); // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [auth]);
 
   const login = async (email: string, password: string):Promise<boolean> => {
@@ -63,9 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      // currentUser will be set by onAuthStateChanged
       toast({ title: 'Signup Successful', description: 'Welcome to LegalForesight AI!' });
-      router.push('/');
+      router.push('/'); // Redirect to home page after successful signup
       return true;
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -83,9 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await signOut(auth);
-      setCurrentUser(null); // Explicitly set current user to null
+      setCurrentUser(null);
       toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
-      router.push('/login'); // Redirect to login page after logout
+      router.push('/login'); 
     } catch (error: any) {
        console.error("Logout error:", error);
       toast({
@@ -98,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-
   const value: AuthContextType = {
     currentUser,
     loading,
@@ -107,9 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout: logoutUser,
   };
 
-  // Always render the Provider and its children.
-  // Consuming components will use the `loading` state from `useAuth()`
-  // to decide what to display (e.g., a loading spinner).
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
