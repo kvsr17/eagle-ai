@@ -95,7 +95,11 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full h-12 text-lg" disabled={authLoading}>
+              <Button
+                type="submit"
+                className="w-full h-12 text-lg bg-[#4285F4] hover:bg-[#3a77d9] text-primary-foreground"
+                disabled={authLoading}
+              >
                 {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
               </Button>
             </form>
