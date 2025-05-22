@@ -11,10 +11,9 @@ export function Navbar() {
 
   return (
     <nav className="bg-primary text-primary-foreground shadow-md no-print">
-      <div className="container mx-auto px-4 py-2 flex items-center justify-between h-16">
-        <Link href="/" className="text-xl font-bold hover:opacity-90 transition-opacity">
-          LegalForesight AI
-        </Link>
+      <div className="container mx-auto px-4 py-3 flex items-center h-12"> {/* Adjusted padding and height to match previous */}
+        {/* Removed "LegalForesight AI" text and icon */}
+        <div className="flex-grow"></div> {/* Added to push auth links to the right */}
         <div className="flex items-center space-x-3">
           {authLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary-foreground" />
@@ -36,11 +35,7 @@ export function Navbar() {
                   <LogIn className="mr-2 h-5 w-5" /> Login
                 </Link>
               </Button>
-              <Button variant="secondary" asChild className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                <Link href="/signup" className="flex items-center">
-                  <UserPlus className="mr-2 h-5 w-5" /> Sign Up
-                </Link>
-              </Button>
+              {/* Sign Up button removed as per request */}
             </>
           )}
         </div>
