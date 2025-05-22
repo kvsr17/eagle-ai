@@ -12,7 +12,7 @@ export function Navbar() {
   return (
     <nav className="bg-primary text-primary-foreground shadow-md no-print">
       <div className="container mx-auto px-4 py-3 flex items-center h-12">
-        <div className="flex-grow"></div>
+        <div className="flex-grow"></div> {/* This pushes content to the right */}
         <div className="flex items-center space-x-3">
           {authLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary-foreground" />
@@ -29,8 +29,7 @@ export function Navbar() {
             </>
           ) : (
             <>
-              {/* Login button removed */}
-              {/* Sign Up button was previously removed */}
+              {/* Login and Sign Up buttons are intentionally removed for unauthenticated users */}
             </>
           )}
         </div>
