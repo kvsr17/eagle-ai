@@ -2,7 +2,7 @@
 "use client";
 
 import type { ChangeEvent } from 'react';
-import { useState, useCallback } from 'react'; // Removed useEffect as it's not directly used for auth redirect anymore
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -67,14 +67,14 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<SuggestImprovementsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
-  const resetAnalysisStates = () => {
+  const resetAnalysisStates = useCallback(() => {
     setSummary(null);
     setUiFlaggedClauses([]);
     setUiMissingPoints([]);
     setSuggestions(null);
     setLegalForesight(null);
     setError(null);
-  };
+  }, []);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,7 +91,7 @@ export default function HomePage() {
           setDocumentText(text);
         };
         reader.readAsText(file);
-        toast({ title: "Text File Selected", description: `${file.name} loaded successfully.` });
+        toast({ title: "Text File Selected", description: `${file.name} loaded successfully for analysis.` });
       } else if (file.type === "application/pdf" || file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -100,15 +100,15 @@ export default function HomePage() {
         };
         reader.readAsDataURL(file);
         const fileTypeDisplay = file.type === "application/pdf" ? "PDF" : "Image";
-        toast({ title: `${fileTypeDisplay} File Selected`, description: `${file.name} loaded. It will be processed as document data by the AI.` });
+        toast({ title: `${fileTypeDisplay} File Selected`, description: `${file.name} loaded. It will be processed by the AI.` });
       } else {
         toast({
-          title: "Invalid File Type",
+          title: "Unsupported File Type",
           description: "Please upload a .txt, .pdf, .png, .jpg, or .jpeg file.",
           variant: "destructive",
         });
         setFileName(null);
-        event.target.value = "";
+        event.target.value = ""; // Reset file input
       }
     } else {
         setFileName(null);
@@ -154,11 +154,15 @@ export default function HomePage() {
       ]);
 
       const [summaryRes, clausesRes, improvementsRes, missingPointsRes, foresightRes] = results;
+      let anyErrors = false;
+      let errorMessages = "";
 
-      if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
-      else {
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value);
+      } else {
         console.error("Summarization failed:", summaryRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + `Summarization failed: ${summaryRes.reason?.message || summaryRes.reason}`);
+        errorMessages += `Summarization failed: ${summaryRes.reason?.message || summaryRes.reason}\n`;
+        anyErrors = true;
       }
 
       if (clausesRes.status === 'fulfilled' && clausesRes.value.criticalClauses) {
@@ -175,13 +179,16 @@ export default function HomePage() {
         })));
       } else if (clausesRes.status === 'rejected') {
         console.error("Clause flagging failed:", clausesRes.reason);
-         setError(prev => (prev ? prev + "\n" : "") + `Clause flagging failed: ${clausesRes.reason?.message || clausesRes.reason}`);
+        errorMessages += `Clause flagging failed: ${clausesRes.reason?.message || clausesRes.reason}\n`;
+        anyErrors = true;
       }
 
-      if (improvementsRes.status === 'fulfilled') setSuggestions(improvementsRes.value);
-      else {
+      if (improvementsRes.status === 'fulfilled') {
+        setSuggestions(improvementsRes.value);
+      } else {
         console.error("Improvement suggestion failed:", improvementsRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + `Improvement suggestion failed: ${improvementsRes.reason?.message || improvementsRes.reason}`);
+        errorMessages += `Improvement suggestion failed: ${improvementsRes.reason?.message || improvementsRes.reason}\n`;
+        anyErrors = true;
       }
 
       if (missingPointsRes.status === 'fulfilled' && missingPointsRes.value) {
@@ -221,24 +228,27 @@ export default function HomePage() {
         setUiMissingPoints(transformedMissingPoints);
       } else if (missingPointsRes.status === 'rejected') {
          console.error("Missing points analysis failed:", missingPointsRes.reason);
-         setError(prev => (prev ? prev + "\n" : "") + `Missing points analysis failed: ${missingPointsRes.reason?.message || missingPointsRes.reason}`);
+         errorMessages += `Missing points analysis failed: ${missingPointsRes.reason?.message || missingPointsRes.reason}\n`;
+         anyErrors = true;
       }
 
-      if (foresightRes.status === 'fulfilled') setLegalForesight(foresightRes.value);
-      else {
+      if (foresightRes.status === 'fulfilled') {
+        setLegalForesight(foresightRes.value);
+      } else {
         console.error("Legal foresight analysis failed:", foresightRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + `Legal foresight analysis failed: ${foresightRes.reason?.message || foresightRes.reason}`);
+        errorMessages += `Legal foresight analysis failed: ${foresightRes.reason?.message || foresightRes.reason}\n`;
+        anyErrors = true;
+      }
+      
+      if (errorMessages.trim()) {
+        setError(errorMessages.trim());
       }
 
       const allFailed = results.every(res => res.status === 'rejected');
-      const anyFailed = results.some(res => res.status === 'rejected');
 
       if (allFailed) {
-        const errorMessages = results
-          .filter(res => res.status === 'rejected').map(res => (res as PromiseRejectedResult).reason?.message || (res as PromiseRejectedResult).reason?.toString() || "Unknown error").join('\n');
-        setError(`All AI analyses failed. Errors:\n${errorMessages}`);
-        toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
-      } else if (anyFailed) {
+        toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check error details.", variant: "destructive", duration: 8000 });
+      } else if (anyErrors) {
          toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Review the report for details.", variant: "default", duration: 7000 });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
@@ -246,8 +256,9 @@ export default function HomePage() {
 
     } catch (e: any) {
       console.error("Error processing document:", e);
-      setError(e.message || "An unexpected error occurred during analysis.");
-      toast({ title: "Analysis Failed", description: e.message || "An error occurred.", variant: "destructive" });
+      const generalErrorMessage = e.message || "An unexpected error occurred during analysis.";
+      setError(generalErrorMessage);
+      toast({ title: "Analysis Failed", description: generalErrorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -268,7 +279,7 @@ export default function HomePage() {
         documentContext: currentDocumentContext,
         fixType: "rewrite",
       };
-    } else {
+    } else { // missingPoint
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, fixLoading: true, isFixProposed: false } : mp));
       itemToFix = uiMissingPoints.find(mp => mp.id === itemId);
       if (!itemToFix || !itemToFix.isFixable) return;
@@ -314,9 +325,9 @@ export default function HomePage() {
 
   const handleAcceptFix = useCallback((itemId: string, itemType: 'flaggedClause' | 'missingPoint') => {
     if (itemType === 'flaggedClause') {
-      setUiFlaggedClauses(prev => prev.map(fc => fc.id === itemId ? { ...fc, isFixAccepted: true, isFixProposed: false } : fc));
+      setUiFlaggedClauses(prev => prev.map(fc => fc.id === itemId ? { ...fc, isFixAccepted: true, isFixProposed: false /* Keep proposed true for styling? Let's set to false */ } : fc));
     } else {
-      setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, isFixAccepted: true, isFixProposed: false } : mp));
+      setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, isFixAccepted: true, isFixProposed: false } : fc));
     }
     toast({ title: "Fix Accepted", description: "The suggested fix has been marked as accepted." });
   }, [toast]);
@@ -334,8 +345,8 @@ export default function HomePage() {
     } else { // missingPoint
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
         ...mp,
-        currentText: mp.text, // Revert currentText to the original problem description (text)
-        justificationNote: undefined, // Clear justification
+        currentText: mp.text, 
+        justificationNote: undefined,
         isFixProposed: false,
         isFixAccepted: false,
         fixLoading: false,
@@ -345,21 +356,21 @@ export default function HomePage() {
   }, [toast]);
 
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     window.print();
-  };
+  }, []);
 
   const hasResults = summary || uiFlaggedClauses.length > 0 || uiMissingPoints.length > 0 || suggestions || legalForesight;
 
   const handleBatchAutoFixAndDownload = async () => {
     if (!hasResults) {
-      toast({ title: "No Report", description: "Please analyze a document first.", variant: "destructive" });
+      toast({ title: "No Report Available", description: "Please analyze a document first.", variant: "destructive" });
       return;
     }
 
     setIsBatchFixing(true);
-    setBatchFixProgress("Starting auto-fix process...");
-    toast({ title: "Auto-Fixing Report", description: "Applying AI suggestions to all applicable items sequentially..." });
+    setBatchFixProgress("Initializing auto-fix process...");
+    toast({ title: "Batch Auto-Fixing Report", description: "Applying AI suggestions to all applicable items sequentially..." });
 
     const currentDocumentContext = documentContext.trim() || (fileName ? `Context related to document: ${fileName}` : "General Legal Document");
 
@@ -377,10 +388,11 @@ export default function HomePage() {
         toast({ title: "No New Fixes Needed", description: "All items seem to be addressed or no auto-fixable items found." });
         setIsBatchFixing(false);
         setBatchFixProgress(null);
-        setTimeout(() => { handlePrint(); }, 100);
+        setTimeout(() => { handlePrint(); }, 100); // Allow DOM to settle if any minor updates occurred
         return;
     }
 
+    // Process flagged clauses sequentially
     for (let i = 0; i < clausesToFix.length; i++) {
       const clause = clausesToFix[i];
       setBatchFixProgress(`Fixing flagged clause ${i + 1} of ${clausesToFix.length}...`);
@@ -402,18 +414,19 @@ export default function HomePage() {
           currentClauseText: result.fixedClauseText,
           currentReason: result.justificationNote || "AI proposed fix applied.",
           isFixProposed: true, 
-          isFixAccepted: false,
+          isFixAccepted: false, // Batch fixes are proposed, not auto-accepted
           fixLoading: false,
         } : fc);
         itemsFixedSuccessfully++;
-      } catch (e) {
+      } catch (e: any) {
         console.error(`Error auto-fixing flagged clause ${clause.id}:`, e);
-        tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false } : fc);
+        tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false, currentReason: `${fc.currentReason} (Auto-fix failed: ${e.message})` } : fc);
         itemsFailedToFix++;
       }
       setUiFlaggedClauses(tempFlaggedClauses); 
     }
 
+    // Process missing points sequentially
     for (let i = 0; i < pointsToFix.length; i++) {
       const point = pointsToFix[i];
       setBatchFixProgress(`Fixing missing point ${i + 1} of ${pointsToFix.length}... (Overall ${clausesToFix.length + i + 1}/${totalItemsToFix})`);
@@ -434,34 +447,41 @@ export default function HomePage() {
           currentText: result.fixedClauseText, 
           justificationNote: result.justificationNote,
           isFixProposed: true, 
-          isFixAccepted: false,
+          isFixAccepted: false, // Batch fixes are proposed
           fixLoading: false,
         } : mp);
         itemsFixedSuccessfully++;
-      } catch (e) {
+      } catch (e: any) {
         console.error(`Error auto-fixing missing point ${point.id}:`, e);
-        tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? { ...mp, fixLoading: false } : mp);
+        tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? { ...mp, fixLoading: false, justificationNote: `Auto-fix failed: ${e.message}` } : mp);
         itemsFailedToFix++;
       }
       setUiMissingPoints(tempMissingPoints);
     }
 
-    setBatchFixProgress("Auto-fix process completed.");
+    setBatchFixProgress("Auto-fix process completed. Preparing report...");
 
     if (itemsFailedToFix > 0) {
-        toast({ title: "Some Fixes Failed", description: `${itemsFailedToFix} item(s) could not be auto-corrected. ${itemsFixedSuccessfully} fixed. Please review.`, variant: "destructive", duration: 7000 });
+        toast({ title: "Some Fixes Failed", description: `${itemsFailedToFix} item(s) could not be auto-corrected. ${itemsFixedSuccessfully} fixed. Please review the report.`, variant: "destructive", duration: 10000 });
     } else if (itemsFixedSuccessfully > 0) {
-        toast({ title: "Auto-Fix Applied", description: `Report updated with ${itemsFixedSuccessfully} AI suggestions. Preparing download.` });
-    } else {
-        toast({ title: "No Fixes Applied", description: "No items were updated during the batch process." });
+        toast({ title: "Batch Auto-Fix Applied", description: `Report updated with ${itemsFixedSuccessfully} AI suggestions. Preparing download.` });
+    } else { // This case might occur if everything was already fixed or not fixable
+        toast({ title: "No New Fixes Applied", description: "No new items were updated during the batch process." });
     }
 
     setIsBatchFixing(false);
     setBatchFixProgress(null);
 
+    // Delay print to allow UI to re-render with all fixes
     setTimeout(() => {
       handlePrint();
-    }, 500); 
+    }, 700); // Increased delay to ensure DOM updates
+  };
+
+  const getButtonText = () => {
+    if (isLoading) return "Analyzing...";
+    if (!fileName) return "Upload Document First";
+    return `Analyze ${fileName.length > 20 ? fileName.substring(0, 17) + "..." : fileName}`;
   };
 
 
@@ -470,7 +490,7 @@ export default function HomePage() {
       <div className="no-print max-w-md mx-auto w-full">
         <Card className="shadow-xl rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
-            <ScanEye size={48} className="text-primary mx-auto mb-3" /> {/* Increased size */}
+            <ScanEye size={48} className="text-primary mx-auto mb-3" />
             <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-8">
@@ -490,7 +510,7 @@ export default function HomePage() {
                   className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-input rounded-lg text-center hover:border-primary/50 transition-colors cursor-pointer bg-card hover:bg-primary/5"
                 >
                   <div className="p-3 bg-primary/10 rounded-lg mb-3">
-                    <FileUp size={40} className="text-primary" /> {/* Increased size */}
+                    <FileUp size={40} className="text-primary" />
                   </div>
                   <p className="text-md font-semibold text-foreground">Upload Document</p>
                   <p className="text-xs text-muted-foreground">or drop a file here</p>
@@ -509,7 +529,7 @@ export default function HomePage() {
                   placeholder="E.g., 'Employment contract for a software engineer', 'NDA for a startup partnership'. This helps improve analysis accuracy."
                   value={documentContext}
                   onChange={(e) => setDocumentContext(e.target.value)}
-                  className="min-h-[70px] text-sm shadow-sm"
+                  className="min-h-[70px] text-sm shadow-sm focus:ring-primary/30 focus:border-primary/30"
                   disabled={isLoading || isBatchFixing}
                 />
                 <p className="text-xs text-muted-foreground mt-1.5">Providing context can significantly enhance the AI's understanding and analysis.</p>
@@ -525,15 +545,13 @@ export default function HomePage() {
                {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : fileName ? (
-                <>
-                  <Zap className="mr-2 h-5 w-5" />
-                  Analyze & Predict
+                  {getButtonText()}
                 </>
               ) : (
-                'Upload Document'
+                <>
+                  <Zap className="mr-2 h-5 w-5" />
+                  {getButtonText()}
+                </>
               )}
             </Button>
           </CardContent>
@@ -549,11 +567,11 @@ export default function HomePage() {
 
 
       {error && !isLoading && !isBatchFixing && (
-        <div className="no-print mt-8 max-w-xl mx-auto">
+        <div className="no-print mt-8 max-w-2xl mx-auto"> {/* Increased max-width */}
           <Alert variant="destructive" className="shadow-md">
-            <AlertCircle className="h-6 w-6" /> {/* Increased size */}
-            <AlertTitle className="text-lg">Error During Analysis</AlertTitle>
-            <AlertDescription className="whitespace-pre-wrap text-base">{error}</AlertDescription>
+            <AlertCircle className="h-6 w-6" />
+            <AlertTitle className="text-lg font-semibold">Error During Analysis</AlertTitle> {/* Made title bolder */}
+            <AlertDescription className="whitespace-pre-wrap text-base mt-2">{error}</AlertDescription> {/* Added margin top */}
           </Alert>
         </div>
       )}
@@ -564,9 +582,9 @@ export default function HomePage() {
              <Button
                 onClick={handlePrint}
                 variant="outline"
-                className="w-full md:w-auto shadow-sm hover:shadow-md"
+                className="w-full md:w-auto shadow-sm hover:shadow-md transition-all"
                 size="lg"
-                disabled={isBatchFixing}
+                disabled={isLoading || isBatchFixing} // Disable if any loading
               >
                 <Printer className="mr-2 h-5 w-5" />
                 Download Full Report
@@ -574,14 +592,14 @@ export default function HomePage() {
               <Button
                 onClick={handleBatchAutoFixAndDownload}
                 variant="default"
-                className="w-full md:w-auto shadow-sm hover:shadow-md"
+                className="w-full md:w-auto shadow-sm hover:shadow-md transition-all" // Added transition
                 size="lg"
                 disabled={isLoading || isBatchFixing || !hasResults}
               >
                 {isBatchFixing ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Fixing & Preparing...
+                    {batchFixProgress ? batchFixProgress.substring(0,20)+'...' : "Fixing & Preparing..."}
                   </>
                 ) : (
                   <>
@@ -619,12 +637,11 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="no-print text-center text-muted-foreground mt-16 py-6 text-xs border-t">
+      <footer className="no-print text-center text-muted-foreground mt-16 py-6 text-xs border-t border-border">
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
         <p>Please consult with a qualified legal professional for any legal matters.</p>
       </footer>
     </div>
   );
 }
-
     

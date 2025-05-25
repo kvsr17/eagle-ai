@@ -6,15 +6,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Loader2, AlertCircle, Send } from 'lucide-react'; // Added Send icon
-import { chatWithDocument, type ChatWithDocumentInput } from '@/ai/flows/chatWithDocument'; // Removed ChatWithDocumentOutput as it's inferred
+import { MessageSquare, Loader2, AlertCircle, Send } from 'lucide-react';
+import { chatWithDocument, type ChatWithDocumentInput } from '@/ai/flows/chatWithDocument';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface ChatInterfaceProps {
   documentText: string | null;
   imageDataUri: string | null;
-  fileName: string | null; // To display which document is being chatted about
+  fileName: string | null;
 }
 
 export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInterfaceProps) {
@@ -26,17 +26,17 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
 
   const handleAskQuestion = async () => {
     if (!userQuestion.trim()) {
-      toast({ title: "Empty Question", description: "Please type a question.", variant: "destructive" });
+      toast({ title: "Empty Question", description: "Please type a question to get an answer.", variant: "destructive" });
       return;
     }
     if (!documentText && !imageDataUri) {
-      toast({ title: "No Document Context", description: "Cannot chat without an active document.", variant: "destructive" });
+      toast({ title: "No Document Context", description: "Cannot chat without an active document. Please analyze a document first.", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setAiResponse(null);
+    setAiResponse(null); // Clear previous response
 
     const payload: ChatWithDocumentInput = { userQuestion };
     if (documentText) payload.documentText = documentText;
@@ -48,25 +48,26 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
       setUserQuestion(""); // Clear input after successful question
     } catch (e: any) {
       console.error("Error in chat:", e);
-      setError(e.message || "An error occurred while getting the AI's response.");
-      toast({ title: "Chat Error", description: e.message || "Failed to get response.", variant: "destructive" });
+      const errorMessage = e.message || "An error occurred while getting the AI's response.";
+      setError(errorMessage);
+      toast({ title: "Chat Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="mt-8 shadow-xl border-primary/30 rounded-lg"> {/* Consistent styling */}
-      <CardHeader className="border-b-2 border-primary/20 bg-primary/10 py-4 px-6"> {/* Enhanced header */}
-        <CardTitle className="flex items-center gap-3 text-xl text-primary font-semibold"> {/* Adjusted gap and font weight */}
-          <MessageSquare size={26} /> {/* Slightly larger icon */}
+    <Card className="mt-10 shadow-xl border-2 border-primary/30 rounded-xl overflow-hidden"> {/* Consistent styling with AnalysisDisplay */}
+      <CardHeader className="border-b-2 border-primary/40 bg-primary-light py-5 px-7"> {/* Enhanced header consistent with AnalysisDisplay */}
+        <CardTitle className="flex items-center gap-3 text-2xl text-primary font-semibold"> {/* Increased font size */}
+          <MessageSquare size={28} /> {/* Slightly larger icon */}
           Chat with: <span className="font-bold">{fileName || "Your Document"}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-6 space-y-5"> {/* Increased spacing */}
+      <CardContent className="pt-7 space-y-6"> {/* Increased padding and spacing */}
         <div>
           <Textarea
-            placeholder="Ask a question about the document... e.g., 'What are the termination conditions?'"
+            placeholder="Ask a question about the document... e.g., 'What are the termination conditions?' or 'Explain clause 5.'"
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
             onKeyDown={(e) => {
@@ -77,13 +78,13 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
             }}
             rows={3}
             disabled={isLoading}
-            className="text-sm shadow-sm focus:ring-2 focus:ring-primary/50" /* Added shadow and focus ring */
+            className="text-base shadow-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 p-3" /* Added p-3 and increased text size */
           />
         </div>
         <Button 
             onClick={handleAskQuestion} 
             disabled={isLoading || (!documentText && !imageDataUri) || !userQuestion.trim()} 
-            className="w-full sm:w-auto text-base py-2.5 px-5" /* Adjusted padding and size */
+            className="w-full sm:w-auto text-lg py-3 px-6 h-12" /* Adjusted padding and size */
             size="lg"
         >
           {isLoading ? (
@@ -100,17 +101,17 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
         </Button>
 
         {error && (
-          <Alert variant="destructive" className="mt-4 shadow-md">
-            <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="text-lg">Chat Error</AlertTitle>
-            <AlertDescription className="text-base">{error}</AlertDescription>
+          <Alert variant="destructive" className="mt-5 shadow-md p-5"> {/* Increased padding */}
+            <AlertCircle className="h-6 w-6" /> {/* Increased icon size */}
+            <AlertTitle className="text-lg font-semibold">Chat Error</AlertTitle> {/* Bolder title */}
+            <AlertDescription className="text-base mt-1.5">{error}</AlertDescription> {/* Added margin */}
           </Alert>
         )}
 
         {aiResponse && !error && (
-          <div className="mt-5 p-5 border border-green-300 bg-green-50/70 rounded-lg shadow-md"> {/* Enhanced styling */}
-            <h4 className="font-semibold text-lg text-green-800 mb-2.5">AI's Answer:</h4> {/* Increased size and margin */}
-            <p className="whitespace-pre-wrap text-base text-gray-800 leading-relaxed">{aiResponse}</p> {/* Increased size */}
+          <div className="mt-6 p-6 border border-green-400 bg-green-50/80 rounded-lg shadow-lg"> {/* Enhanced styling for AI response */}
+            <h4 className="font-semibold text-xl text-green-800 mb-3">AI's Answer:</h4> {/* Increased size and margin */}
+            <p className="whitespace-pre-wrap text-base text-gray-800 leading-relaxed">{aiResponse}</p>
           </div>
         )}
       </CardContent>
