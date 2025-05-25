@@ -18,6 +18,7 @@ import { suggestImprovements, type SuggestImprovementsOutput, type SuggestImprov
 import { identifyMissingPoints, type IdentifyMissingPointsOutput, type IdentifyMissingPointsInput } from '@/ai/flows/identify-missing-points';
 import { predictLegalOutcomes, type PredictLegalOutcomesOutput, type PredictLegalOutcomesInput } from '@/ai/flows/predict-legal-outcomes';
 import { autoFixClause, type AutoFixClauseInput, type AutoFixClauseOutput } from '@/ai/flows/auto-fix-clause';
+import { ChatInterface } from '@/components/ChatInterface'; // Added import
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
@@ -157,7 +158,7 @@ export default function HomePage() {
       if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value);
       else {
         console.error("Summarization failed:", summaryRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + "Summarization failed.");
+        setError(prev => (prev ? prev + "\n" : "") + `Summarization failed: ${summaryRes.reason?.message || summaryRes.reason}`);
       }
 
       if (clausesRes.status === 'fulfilled' && clausesRes.value.criticalClauses) {
@@ -174,13 +175,13 @@ export default function HomePage() {
         })));
       } else if (clausesRes.status === 'rejected') {
         console.error("Clause flagging failed:", clausesRes.reason);
-         setError(prev => (prev ? prev + "\n" : "") + "Clause flagging failed.");
+         setError(prev => (prev ? prev + "\n" : "") + `Clause flagging failed: ${clausesRes.reason?.message || clausesRes.reason}`);
       }
 
       if (improvementsRes.status === 'fulfilled') setSuggestions(improvementsRes.value);
       else {
         console.error("Improvement suggestion failed:", improvementsRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + "Improvement suggestion failed.");
+        setError(prev => (prev ? prev + "\n" : "") + `Improvement suggestion failed: ${improvementsRes.reason?.message || improvementsRes.reason}`);
       }
 
       if (missingPointsRes.status === 'fulfilled' && missingPointsRes.value) {
@@ -220,13 +221,13 @@ export default function HomePage() {
         setUiMissingPoints(transformedMissingPoints);
       } else if (missingPointsRes.status === 'rejected') {
          console.error("Missing points analysis failed:", missingPointsRes.reason);
-         setError(prev => (prev ? prev + "\n" : "") + "Missing points analysis failed.");
+         setError(prev => (prev ? prev + "\n" : "") + `Missing points analysis failed: ${missingPointsRes.reason?.message || missingPointsRes.reason}`);
       }
 
       if (foresightRes.status === 'fulfilled') setLegalForesight(foresightRes.value);
       else {
         console.error("Legal foresight analysis failed:", foresightRes.reason);
-        setError(prev => (prev ? prev + "\n" : "") + "Legal foresight analysis failed.");
+        setError(prev => (prev ? prev + "\n" : "") + `Legal foresight analysis failed: ${foresightRes.reason?.message || foresightRes.reason}`);
       }
 
       const allFailed = results.every(res => res.status === 'rejected');
@@ -238,7 +239,7 @@ export default function HomePage() {
         setError(`All AI analyses failed. Errors:\n${errorMessages}`);
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
       } else if (anyFailed) {
-         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Review the report for details.", variant: "default" });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Review the report for details.", variant: "default", duration: 7000 });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -272,7 +273,7 @@ export default function HomePage() {
       itemToFix = uiMissingPoints.find(mp => mp.id === itemId);
       if (!itemToFix || !itemToFix.isFixable) return;
       autoFixInput = {
-        problemDescription: itemToFix.text,
+        problemDescription: itemToFix.text, // For missing points, original text is the problem description
         documentContext: currentDocumentContext,
         fixType: "generate",
       };
@@ -289,10 +290,10 @@ export default function HomePage() {
           isFixAccepted: false,
           fixLoading: false,
         } : fc));
-      } else {
+      } else { // missingPoint
         setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
           ...mp,
-          currentText: result.fixedClauseText,
+          currentText: result.fixedClauseText, // The 'fix' for a missing point is the generated clause
           justificationNote: result.justificationNote,
           isFixProposed: true,
           isFixAccepted: false,
@@ -330,11 +331,11 @@ export default function HomePage() {
         isFixAccepted: false,
         fixLoading: false,
       } : fc));
-    } else {
+    } else { // missingPoint
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
         ...mp,
-        currentText: mp.text,
-        justificationNote: undefined,
+        currentText: mp.text, // Revert currentText to the original problem description (text)
+        justificationNote: undefined, // Clear justification
         isFixProposed: false,
         isFixAccepted: false,
         fixLoading: false,
@@ -362,8 +363,12 @@ export default function HomePage() {
 
     const currentDocumentContext = documentContext.trim() || (fileName ? `Context related to document: ${fileName}` : "General Legal Document");
 
-    const clausesToFix = uiFlaggedClauses.filter(clause => !clause.isFixProposed && !clause.isFixAccepted);
-    const pointsToFix = uiMissingPoints.filter(point => point.isFixable && !point.isFixProposed && !point.isFixAccepted);
+    // Create copies of the state arrays to work with, to avoid direct mutation issues during async operations
+    let tempFlaggedClauses = [...uiFlaggedClauses];
+    let tempMissingPoints = [...uiMissingPoints];
+
+    const clausesToFix = tempFlaggedClauses.filter(clause => !clause.isFixProposed && !clause.isFixAccepted);
+    const pointsToFix = tempMissingPoints.filter(point => point.isFixable && !point.isFixProposed && !point.isFixAccepted);
 
     const totalItemsToFix = clausesToFix.length + pointsToFix.length;
     let itemsFixedSuccessfully = 0;
@@ -373,7 +378,8 @@ export default function HomePage() {
         toast({ title: "No New Fixes Needed", description: "All items seem to be addressed or no auto-fixable items found." });
         setIsBatchFixing(false);
         setBatchFixProgress(null);
-        setTimeout(() => { handlePrint(); }, 100);
+        // Wait for state to settle before printing
+        setTimeout(() => { handlePrint(); }, 100); // Small delay
         return;
     }
 
@@ -381,7 +387,12 @@ export default function HomePage() {
     for (let i = 0; i < clausesToFix.length; i++) {
       const clause = clausesToFix[i];
       setBatchFixProgress(`Fixing flagged clause ${i + 1} of ${clausesToFix.length}...`);
-      setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? { ...fc, fixLoading: true } : fc));
+      
+      // Update the specific item in the temporary array for loading state
+      tempFlaggedClauses = tempFlaggedClauses.map(fc => 
+        fc.id === clause.id ? { ...fc, fixLoading: true } : fc
+      );
+      setUiFlaggedClauses(tempFlaggedClauses); // Update UI
 
       try {
         const result = await autoFixClause({
@@ -390,47 +401,54 @@ export default function HomePage() {
           documentContext: currentDocumentContext,
           fixType: "rewrite",
         });
-        setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? {
+        tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? {
           ...fc,
           currentClauseText: result.fixedClauseText,
           currentReason: result.justificationNote || "AI proposed fix applied.",
-          isFixProposed: true,
+          isFixProposed: true, // Mark as proposed, not accepted
           isFixAccepted: false,
           fixLoading: false,
-        } : fc));
+        } : fc);
         itemsFixedSuccessfully++;
       } catch (e) {
         console.error(`Error auto-fixing flagged clause ${clause.id}:`, e);
-        setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false } : fc));
+        tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false } : fc);
         itemsFailedToFix++;
       }
+      setUiFlaggedClauses(tempFlaggedClauses); // Update UI after attempt
     }
 
     // Process Missing Points Sequentially
     for (let i = 0; i < pointsToFix.length; i++) {
       const point = pointsToFix[i];
       setBatchFixProgress(`Fixing missing point ${i + 1} of ${pointsToFix.length}... (Overall ${clausesToFix.length + i + 1}/${totalItemsToFix})`);
-      setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? { ...mp, fixLoading: true } : mp));
+      
+      tempMissingPoints = tempMissingPoints.map(mp => 
+        mp.id === point.id ? { ...mp, fixLoading: true } : mp
+      );
+      setUiMissingPoints(tempMissingPoints); // Update UI
+
       try {
         const result = await autoFixClause({
-          problemDescription: point.text,
+          problemDescription: point.text, // Original problem description
           documentContext: currentDocumentContext,
           fixType: "generate",
         });
-        setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? {
+        tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? {
           ...mp,
-          currentText: result.fixedClauseText,
+          currentText: result.fixedClauseText, // The fix is the new clause
           justificationNote: result.justificationNote,
-          isFixProposed: true,
+          isFixProposed: true, // Mark as proposed
           isFixAccepted: false,
           fixLoading: false,
-        } : mp));
+        } : mp);
         itemsFixedSuccessfully++;
       } catch (e) {
         console.error(`Error auto-fixing missing point ${point.id}:`, e);
-        setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? { ...mp, fixLoading: false } : mp));
+        tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? { ...mp, fixLoading: false } : mp);
         itemsFailedToFix++;
       }
+      setUiMissingPoints(tempMissingPoints); // Update UI after attempt
     }
 
     setBatchFixProgress("Auto-fix process completed.");
@@ -447,6 +465,7 @@ export default function HomePage() {
     setIsBatchFixing(false);
     setBatchFixProgress(null);
 
+    // Wait for all state updates to reflect in DOM before printing
     setTimeout(() => {
       handlePrint();
     }, 500); // Slightly longer delay to ensure DOM updates
@@ -548,7 +567,7 @@ export default function HomePage() {
 
       <div id="report-content" className="printable-area mt-10">
         {!isLoading && !isBatchFixing && hasResults && (
-           <div className="text-center mb-6 no-print space-y-3 md:space-y-0 md:space-x-3">
+           <div className="text-center mb-6 no-print space-y-3 md:space-y-0 md:flex md:items-center md:justify-center md:space-x-3"> {/* Flex layout for desktop */}
              <Button
                 onClick={handlePrint}
                 variant="outline"
@@ -614,3 +633,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
