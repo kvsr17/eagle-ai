@@ -5,12 +5,13 @@
  *
  * - autoFixClause - A function that rewrites a problematic clause or generates a missing one.
  * - AutoFixClauseInput - The input type for the autoFixClause function.
- * - AutoFixClauseOutput - The return type for the autoFixClause function.
+ * - AutoFixClauseOutput - The return type for the autoFixClauseOutput function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+// Schema for the FLOW's public input
 const AutoFixClauseInputSchema = z.object({
   originalClauseText: z.string().optional().describe('The original text of the clause to be fixed. Omit if generating a new clause for a missing element.'),
   problemDescription: z.string().describe('A description of why the original clause is problematic, or a description of the missing clause/element to be generated (e.g., "Missing confidentiality clause", "Vague termination conditions").'),
@@ -18,6 +19,15 @@ const AutoFixClauseInputSchema = z.object({
   fixType: z.enum(["rewrite", "generate"]).default("rewrite").describe("Specify 'rewrite' if an 'originalClauseText' is provided. Specify 'generate' if suggesting a clause for a 'problemDescription' that indicates a missing element.")
 });
 export type AutoFixClauseInput = z.infer<typeof AutoFixClauseInputSchema>;
+
+// Schema for the PROMPT's internal input (Handlebars context)
+const AutoFixClausePromptInputSchema = z.object({
+  originalClauseText: z.string().optional(),
+  problemDescription: z.string(),
+  documentContext: z.string().optional(),
+  fixType: z.enum(["rewrite", "generate"]), // Keep for potential use in prompt text, not for main conditional
+  isRewrite: z.boolean(), // Flag for Handlebars conditional
+});
 
 const AutoFixClauseOutputSchema = z.object({
   fixedClauseText: z.string().describe('The AI-generated revised or new clause, ready for contract use.'),
@@ -42,7 +52,7 @@ export async function autoFixClause(input: AutoFixClauseInput): Promise<AutoFixC
 
 const autoFixClausePrompt = ai.definePrompt({
   name: 'autoFixClausePrompt',
-  input: {schema: AutoFixClauseInputSchema},
+  input: {schema: AutoFixClausePromptInputSchema}, // Use the prompt-specific input schema
   output: {schema: AutoFixClauseOutputSchema},
   prompt: `You are a professional contract lawyer AI. Your task is to either rewrite a problematic clause or generate a new clause for a legal document, based on the user's request.
 Ensure the output is legally sound, fair to all parties involved (or to the primary party if context implies a one-sided review), easy to understand, and minimizes ambiguity or legal risk.
@@ -51,7 +61,7 @@ Optionally, provide a brief 'justificationNote' explaining the key improvements 
 
 Document Context: {{#if documentContext}}{{documentContext}}{{else}}General Legal Document{{/if}}
 
-{{#if (eq fixType "rewrite")}}
+{{#if isRewrite}}
 Instruction: Rewrite the following problematic clause.
 Original Problematic Clause:
 \`\`\`
@@ -65,7 +75,7 @@ Your Suggested Revision (fixedClauseText):
 Your Justification for the Revision (justificationNote, optional):
 [Explain the improvements made]
 
-{{else if (eq fixType "generate")}}
+{{else}} {{! This implies fixType is "generate" as isRewrite would be false }}
 Instruction: Generate a new clause to address the following missing element or problem.
 Description of Missing Element / Problem to Address: {{{problemDescription}}}
 {{#if originalClauseText}}
@@ -85,11 +95,19 @@ Your Justification for the New Clause (justificationNote, optional):
 const autoFixClauseFlow = ai.defineFlow(
   {
     name: 'autoFixClauseFlow',
-    inputSchema: AutoFixClauseInputSchema,
+    inputSchema: AutoFixClauseInputSchema, // Flow's public input schema
     outputSchema: AutoFixClauseOutputSchema,
   },
-  async (input) => {
-    const {output} = await autoFixClausePrompt(input);
+  async (input: AutoFixClauseInput): Promise<AutoFixClauseOutput> => { // Ensure input type matches the flow's inputSchema
+    const promptInputPayload: z.infer<typeof AutoFixClausePromptInputSchema> = {
+      originalClauseText: input.originalClauseText,
+      problemDescription: input.problemDescription,
+      documentContext: input.documentContext,
+      fixType: input.fixType,
+      isRewrite: input.fixType === "rewrite",
+    };
+
+    const {output} = await autoFixClausePrompt(promptInputPayload);
     // Ensure output is not null and fixedClauseText is present
     if (!output || !output.fixedClauseText) {
         throw new Error("AI failed to generate a fixed clause.");
