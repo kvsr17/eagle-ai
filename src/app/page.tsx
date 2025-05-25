@@ -10,8 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, FileDown, Wand2 } from 'lucide-react'; // Added Wand2
-import { ChatInterface } from '@/components/ChatInterface';
+import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Wand2 } from 'lucide-react';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -27,10 +26,10 @@ type CriticalClauseBase = FlagCriticalClausesOutput['criticalClauses'][number];
 
 export interface UIFlaggedClause extends CriticalClauseBase {
   id: string;
-  originalClauseText: string; 
+  originalClauseText: string;
   originalReason: string;
-  currentClauseText: string; 
-  currentReason: string; 
+  currentClauseText: string;
+  currentReason: string;
   isFixProposed: boolean;
   isFixAccepted: boolean;
   fixLoading: boolean;
@@ -38,11 +37,11 @@ export interface UIFlaggedClause extends CriticalClauseBase {
 
 export interface UIMissingPoint {
   id: string;
-  type: 'missing' | 'recommendation' | 'summary'; 
-  text: string; 
-  isFixable: boolean; 
-  currentText: string; 
-  justificationNote?: string; 
+  type: 'missing' | 'recommendation' | 'summary';
+  text: string;
+  isFixable: boolean;
+  currentText: string;
+  justificationNote?: string;
   isFixProposed: boolean;
   isFixAccepted: boolean;
   fixLoading: boolean;
@@ -55,7 +54,8 @@ export default function HomePage() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [documentContext, setDocumentContext] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isBatchFixing, setIsBatchFixing] = useState(false); // New state for batch fixing
+  const [isBatchFixing, setIsBatchFixing] = useState(false);
+  const [batchFixProgress, setBatchFixProgress] = useState<string | null>(null); // For sequential progress
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -107,7 +107,7 @@ export default function HomePage() {
           variant: "destructive",
         });
         setFileName(null);
-        event.target.value = ""; 
+        event.target.value = "";
       }
     } else {
         setFileName(null);
@@ -189,7 +189,7 @@ export default function HomePage() {
           id: `missing-point-${index}-${Date.now()}`,
           type: 'missing',
           text: point,
-          isFixable: true, 
+          isFixable: true,
           currentText: point,
           isFixProposed: false,
           isFixAccepted: false,
@@ -199,7 +199,7 @@ export default function HomePage() {
           id: `missing-rec-${index}-${Date.now()}`,
           type: 'recommendation',
           text: rec,
-          isFixable: false, 
+          isFixable: false,
           currentText: rec,
           isFixProposed: false,
           isFixAccepted: false,
@@ -267,12 +267,12 @@ export default function HomePage() {
         documentContext: currentDocumentContext,
         fixType: "rewrite",
       };
-    } else { 
+    } else {
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, fixLoading: true, isFixProposed: false } : mp));
       itemToFix = uiMissingPoints.find(mp => mp.id === itemId);
       if (!itemToFix || !itemToFix.isFixable) return;
       autoFixInput = {
-        problemDescription: itemToFix.text, 
+        problemDescription: itemToFix.text,
         documentContext: currentDocumentContext,
         fixType: "generate",
       };
@@ -289,10 +289,10 @@ export default function HomePage() {
           isFixAccepted: false,
           fixLoading: false,
         } : fc));
-      } else { 
+      } else {
         setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
           ...mp,
-          currentText: result.fixedClauseText, 
+          currentText: result.fixedClauseText,
           justificationNote: result.justificationNote,
           isFixProposed: true,
           isFixAccepted: false,
@@ -330,10 +330,10 @@ export default function HomePage() {
         isFixAccepted: false,
         fixLoading: false,
       } : fc));
-    } else { 
+    } else {
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
         ...mp,
-        currentText: mp.text, 
+        currentText: mp.text,
         justificationNote: undefined,
         isFixProposed: false,
         isFixAccepted: false,
@@ -357,34 +357,32 @@ export default function HomePage() {
     }
 
     setIsBatchFixing(true);
-    toast({ title: "Auto-Fixing Report", description: "Applying AI suggestions to all applicable items..." });
+    setBatchFixProgress("Starting auto-fix process...");
+    toast({ title: "Auto-Fixing Report", description: "Applying AI suggestions to all applicable items sequentially..." });
 
     const currentDocumentContext = documentContext.trim() || (fileName ? `Context related to document: ${fileName}` : "General Legal Document");
 
-    // Step 1: Identify and Mark Items for Fixing (Update UI to show loading)
     const clausesToFix = uiFlaggedClauses.filter(clause => !clause.isFixProposed && !clause.isFixAccepted);
     const pointsToFix = uiMissingPoints.filter(point => point.isFixable && !point.isFixProposed && !point.isFixAccepted);
 
-    if (clausesToFix.length > 0) {
-      setUiFlaggedClauses(prev => prev.map(fc => clausesToFix.find(ctf => ctf.id === fc.id) ? { ...fc, fixLoading: true } : fc));
-    }
-    if (pointsToFix.length > 0) {
-      setUiMissingPoints(prev => prev.map(mp => pointsToFix.find(ptf => ptf.id === mp.id) ? { ...mp, fixLoading: true } : mp));
-    }
-    
-    if (clausesToFix.length === 0 && pointsToFix.length === 0) {
+    const totalItemsToFix = clausesToFix.length + pointsToFix.length;
+    let itemsFixedSuccessfully = 0;
+    let itemsFailedToFix = 0;
+
+    if (totalItemsToFix === 0) {
         toast({ title: "No New Fixes Needed", description: "All items seem to be addressed or no auto-fixable items found." });
         setIsBatchFixing(false);
-        // Proceed to download if the user still wants the current report
-        setTimeout(() => {
-            handlePrint();
-        }, 100);
+        setBatchFixProgress(null);
+        setTimeout(() => { handlePrint(); }, 100);
         return;
     }
 
+    // Process Flagged Clauses Sequentially
+    for (let i = 0; i < clausesToFix.length; i++) {
+      const clause = clausesToFix[i];
+      setBatchFixProgress(`Fixing flagged clause ${i + 1} of ${clausesToFix.length}...`);
+      setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? { ...fc, fixLoading: true } : fc));
 
-    // Step 2: Collect and Execute AI Fixes
-    const flaggedClauseFixPromises = clausesToFix.map(async (clause) => {
       try {
         const result = await autoFixClause({
           originalClauseText: clause.originalClauseText,
@@ -392,113 +390,66 @@ export default function HomePage() {
           documentContext: currentDocumentContext,
           fixType: "rewrite",
         });
-        return { id: clause.id, type: 'flaggedClause', success: true, data: result };
+        setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? {
+          ...fc,
+          currentClauseText: result.fixedClauseText,
+          currentReason: result.justificationNote || "AI proposed fix applied.",
+          isFixProposed: true,
+          isFixAccepted: false,
+          fixLoading: false,
+        } : fc));
+        itemsFixedSuccessfully++;
       } catch (e) {
         console.error(`Error auto-fixing flagged clause ${clause.id}:`, e);
-        return { id: clause.id, type: 'flaggedClause', success: false, error: e };
+        setUiFlaggedClauses(prev => prev.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false } : fc));
+        itemsFailedToFix++;
       }
-    });
+    }
 
-    const missingPointFixPromises = pointsToFix.map(async (point) => {
+    // Process Missing Points Sequentially
+    for (let i = 0; i < pointsToFix.length; i++) {
+      const point = pointsToFix[i];
+      setBatchFixProgress(`Fixing missing point ${i + 1} of ${pointsToFix.length}... (Overall ${clausesToFix.length + i + 1}/${totalItemsToFix})`);
+      setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? { ...mp, fixLoading: true } : mp));
       try {
         const result = await autoFixClause({
           problemDescription: point.text,
           documentContext: currentDocumentContext,
           fixType: "generate",
         });
-        return { id: point.id, type: 'missingPoint', success: true, data: result };
+        setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? {
+          ...mp,
+          currentText: result.fixedClauseText,
+          justificationNote: result.justificationNote,
+          isFixProposed: true,
+          isFixAccepted: false,
+          fixLoading: false,
+        } : mp));
+        itemsFixedSuccessfully++;
       } catch (e) {
         console.error(`Error auto-fixing missing point ${point.id}:`, e);
-        return { id: point.id, type: 'missingPoint', success: false, error: e };
+        setUiMissingPoints(prev => prev.map(mp => mp.id === point.id ? { ...mp, fixLoading: false } : mp));
+        itemsFailedToFix++;
       }
-    });
+    }
 
-    const allPromises = [...flaggedClauseFixPromises, ...missingPointFixPromises];
-    const results = await Promise.allSettled(allPromises);
+    setBatchFixProgress("Auto-fix process completed.");
 
-    let anyFixesApplied = false;
-    let anyFailures = false;
-
-    // Step 3: Update State with Fix Results
-    setUiFlaggedClauses(prevClauses => {
-      const newClauses = [...prevClauses]; // Create a mutable copy
-      results.forEach(settledResult => {
-        if (settledResult.status === 'fulfilled') {
-          const result = settledResult.value;
-          if (result.type === 'flaggedClause') {
-            const clauseIndex = newClauses.findIndex(fc => fc.id === result.id);
-            if (clauseIndex !== -1) {
-              if (result.success && result.data) {
-                newClauses[clauseIndex] = {
-                  ...newClauses[clauseIndex],
-                  currentClauseText: result.data.fixedClauseText,
-                  currentReason: result.data.justificationNote || "AI proposed fix applied.",
-                  isFixProposed: true,
-                  isFixAccepted: false, 
-                  fixLoading: false,
-                };
-                anyFixesApplied = true;
-              } else {
-                newClauses[clauseIndex] = { ...newClauses[clauseIndex], fixLoading: false };
-                anyFailures = true;
-              }
-            }
-          }
-        } else { 
-            anyFailures = true;
-            // Attempt to find the item by ID if possible from the promise, though `allSettled` wraps it
-            // For now, we rely on the initial loading state being cleared.
-        }
-      });
-      return newClauses;
-    });
-
-    setUiMissingPoints(prevPoints => {
-      const newPoints = [...prevPoints]; // Create a mutable copy
-      results.forEach(settledResult => {
-        if (settledResult.status === 'fulfilled') {
-          const result = settledResult.value;
-          if (result.type === 'missingPoint') {
-            const pointIndex = newPoints.findIndex(mp => mp.id === result.id);
-            if (pointIndex !== -1) {
-              if (result.success && result.data) {
-                newPoints[pointIndex] = {
-                  ...newPoints[pointIndex],
-                  currentText: result.data.fixedClauseText,
-                  justificationNote: result.data.justificationNote,
-                  isFixProposed: true,
-                  isFixAccepted: false, 
-                  fixLoading: false,
-                };
-                anyFixesApplied = true;
-              } else {
-                newPoints[pointIndex] = { ...newPoints[pointIndex], fixLoading: false };
-                anyFailures = true;
-              }
-            }
-          }
-        } else {
-            anyFailures = true;
-        }
-      });
-      return newPoints;
-    });
-    
-    // Step 4: User Feedback & Download
-    if (anyFailures) {
-        toast({ title: "Some Fixes Failed", description: "Not all items could be auto-corrected. Please review the report.", variant: "destructive" });
-    } else if (anyFixesApplied) {
-        toast({ title: "Auto-Fix Applied", description: "Report updated with AI suggestions. Preparing download." });
+    if (itemsFailedToFix > 0) {
+        toast({ title: "Some Fixes Failed", description: `${itemsFailedToFix} item(s) could not be auto-corrected. ${itemsFixedSuccessfully} fixed. Please review.`, variant: "destructive", duration: 7000 });
+    } else if (itemsFixedSuccessfully > 0) {
+        toast({ title: "Auto-Fix Applied", description: `Report updated with ${itemsFixedSuccessfully} AI suggestions. Preparing download.` });
     } else {
-        // This case is now handled earlier if clausesToFix and pointsToFix are both empty
-        // toast({ title: "No New Fixes Needed", description: "All items were already addressed or no auto-fixable items found. Preparing download." });
+        // This case should have been caught earlier if totalItemsToFix was 0
+        toast({ title: "No Fixes Applied", description: "No items were updated during the batch process." });
     }
 
     setIsBatchFixing(false);
+    setBatchFixProgress(null);
 
     setTimeout(() => {
       handlePrint();
-    }, 100); 
+    }, 500); // Slightly longer delay to ensure DOM updates
   };
 
 
@@ -507,7 +458,7 @@ export default function HomePage() {
       <div className="max-w-md mx-auto w-full no-print">
         <Card className="shadow-xl rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
-            <ScanEye size={40} className="text-primary mx-auto mb-2" /> 
+            <ScanEye size={40} className="text-primary mx-auto mb-2" />
             <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-8">
@@ -578,7 +529,11 @@ export default function HomePage() {
       </div>
 
       {isLoading && <div className="no-print mt-8"><LoadingIndicator text="Generating insights & predictions..." /></div>}
-      {isBatchFixing && <div className="no-print mt-8"><LoadingIndicator text="Applying auto-fixes and preparing report..." /></div>}
+      {isBatchFixing && (
+        <div className="no-print mt-8">
+            <LoadingIndicator text={batchFixProgress || "Applying auto-fixes and preparing report..."} />
+        </div>
+      )}
 
 
       {error && !isLoading && !isBatchFixing && (
@@ -618,7 +573,7 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <Wand2 className="mr-2 h-5 w-5" /> 
+                    <Wand2 className="mr-2 h-5 w-5" />
                     Download Fixed Report
                   </>
                 )}
@@ -631,9 +586,9 @@ export default function HomePage() {
             fileName={fileName}
             documentContext={documentContext.trim() || (fileName ? `Context related to document: ${fileName}` : "General Legal Document")}
             summary={summary}
-            flaggedClauses={uiFlaggedClauses} 
+            flaggedClauses={uiFlaggedClauses}
             suggestions={suggestions}
-            missingPoints={uiMissingPoints} 
+            missingPoints={uiMissingPoints}
             legalForesight={legalForesight}
             onApplyAutoFix={handleApplyAutoFix}
             onAcceptFix={handleAcceptFix}
@@ -659,6 +614,3 @@ export default function HomePage() {
     </div>
   );
 }
-    
-
-    
