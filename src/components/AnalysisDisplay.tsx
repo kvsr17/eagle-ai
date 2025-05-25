@@ -16,6 +16,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   Tag,
+  Archive // Placeholder for Report icon
 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import type { SummarizeLegalDocumentOutput } from '@/ai/flows/summarize-legal-document';
@@ -44,62 +45,32 @@ export function AnalysisDisplay({
   missingPoints,
   legalForesight,
 }: AnalysisDisplayProps) {
-  const hasContent = summary?.overallSummary || 
-                     (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
-                     (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
-                     (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) ||
-                     (legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0));
+  const hasContent =
+    summary?.overallSummary ||
+    (summary?.involvedParties && summary.involvedParties.length > 0 && summary.involvedParties[0]?.toLowerCase() !== 'not specified') ||
+    (summary?.keyObligations && summary.keyObligations.length > 0 && summary.keyObligations[0]?.toLowerCase() !== 'not specified') ||
+    (summary?.financialTerms && summary.financialTerms.length > 0 && summary.financialTerms[0]?.toLowerCase() !== 'not specified') ||
+    (summary?.keyDates && summary.keyDates.length > 0 && summary.keyDates[0]?.toLowerCase() !== 'not specified') ||
+    (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
+    (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
+    (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) ||
+    (legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0));
 
-  if (!fileName && !hasContent) {
+  const renderList = (items: string[] | undefined, emptyMessage: string, icon?: React.ReactNode) => {
+    if (!items || items.length === 0 || (items.length === 1 && (items[0]?.toLowerCase() === "not specified" || items[0]?.trim() === "" ))) {
+      return <p className="text-muted-foreground text-sm italic">{emptyMessage}</p>;
+    }
     return (
-      <Card className="mt-6 shadow-lg border-primary/20">
-        <CardHeader className="pb-4 border-b-2 border-primary bg-primary/5 rounded-t-lg">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Zap size={40} className="text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold text-primary">LegalForesight Analysis Report</h1>
-                <p className="text-muted-foreground">Prepared by LegalForesight AI</p>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 md:p-8 text-center">
-            <FileText size={48} className="mx-auto mb-4 text-muted-foreground" />
-            <p className="text-xl text-muted-foreground">Upload a document to begin analysis.</p>
-        </CardContent>
-      </Card>
+      <ul className="space-y-2.5 list-disc list-outside ml-5">
+        {items.map((item, index) => (
+          <li key={index} className="text-foreground/90 marker:text-primary leading-relaxed flex items-start gap-2.5">
+            {icon && <span className="mt-1 text-primary/80">{icon}</span>}
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     );
-  }
-  
-  if (fileName && !hasContent) {
-     return (
-      <Card className="mt-6 shadow-lg border-primary/20">
-        <CardHeader className="pb-4 border-b-2 border-primary bg-primary/5 rounded-t-lg">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Zap size={40} className="text-primary" />
-              <div>
-                <h1 className="text-3xl font-bold text-primary">LegalForesight Analysis Report</h1>
-                <p className="text-muted-foreground">Prepared by LegalForesight AI</p>
-              </div>
-            </div>
-             {fileName && (
-              <div className="text-right shrink-0">
-                <p className="text-sm text-muted-foreground">Document:</p>
-                <p className="text-lg font-semibold text-primary truncate max-w-xs" title={fileName}>{fileName}</p>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 md:p-8 text-center">
-            <FileText size={48} className="mx-auto mb-4 text-muted-foreground" />
-            <p className="text-xl text-muted-foreground">No specific analysis results to display for {fileName}.</p>
-            <p className="text-muted-foreground">This might happen if the document is empty, unreadable, or the AI could not extract relevant information from any of the analyses.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  };
 
   const getRiskBadgeVariant = (riskAssessment: string | undefined) => {
     if (!riskAssessment) return "secondary";
@@ -109,38 +80,58 @@ export function AnalysisDisplay({
     if (lowerRisk.includes("low")) return "secondary"; 
     return "outline";
   };
-
-  const renderList = (items: string[] | undefined, emptyMessage: string, icon?: React.ReactNode) => {
-    if (!items || items.length === 0 || (items.length === 1 && items[0]?.toLowerCase() === "not specified")) {
-      return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
-    }
-    return (
-      <ul className="space-y-2 list-disc list-inside pl-2">
-        {items.map((item, index) => (
-          <li key={index} className="text-foreground/90 marker:text-primary leading-relaxed flex items-start gap-2">
-            {icon && <span className="mt-1">{icon}</span>}
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  };
-
-
-  return (
-    <Card className="mt-6 shadow-lg border-primary/20"> 
+  
+  const initialEmptyStateCard = (title: string, message: string, icon?: React.ReactNode) => (
+    <Card className="mt-6 shadow-xl border-primary/20 rounded-lg">
       <CardHeader className="pb-4 border-b-2 border-primary bg-primary/5 rounded-t-lg">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Zap size={40} className="text-primary" />
+            {icon || <Archive size={40} className="text-primary" />}
             <div>
-              <h1 className="text-3xl font-bold text-primary">LegalForesight Analysis Report</h1>
+              <h1 className="text-3xl font-bold text-primary">{title}</h1>
               <p className="text-muted-foreground">Prepared by LegalForesight AI</p>
             </div>
           </div>
           {fileName && (
             <div className="text-right shrink-0">
               <p className="text-sm text-muted-foreground">Document:</p>
+              <p className="text-lg font-semibold text-primary truncate max-w-xs" title={fileName}>{fileName}</p>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-8 text-center">
+          <FileText size={52} className="mx-auto mb-6 text-muted-foreground/70" />
+          <p className="text-xl text-muted-foreground">{message}</p>
+          {fileName && !hasContent && (
+             <p className="text-muted-foreground mt-2">This might happen if the document is empty, unreadable, or the AI could not extract relevant information.</p>
+          )}
+      </CardContent>
+    </Card>
+  );
+
+  if (!fileName && !hasContent) {
+    return initialEmptyStateCard("LegalForesight Analysis Report", "Upload a document to begin analysis.", <Zap size={40} className="text-primary" />);
+  }
+  
+  if (fileName && !hasContent) {
+     return initialEmptyStateCard("LegalForesight Analysis Report", `No specific analysis results to display for ${fileName}.`);
+  }
+
+  return (
+    <Card className="mt-6 shadow-xl border-primary/30 rounded-lg">
+      <CardHeader className="py-5 px-6 border-b-2 border-primary bg-primary/10 rounded-t-lg">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Zap size={40} className="text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold text-primary">LegalForesight Analysis Report</h1>
+              <p className="text-muted-foreground font-medium">Prepared by LegalForesight AI</p>
+            </div>
+          </div>
+          {fileName && (
+            <div className="text-right shrink-0 sm:mt-0 mt-3">
+              <p className="text-sm text-muted-foreground">Document Analyzed:</p>
               <p className="text-lg font-semibold text-primary truncate max-w-xs" title={fileName}>{fileName}</p>
             </div>
           )}
@@ -153,136 +144,133 @@ export function AnalysisDisplay({
             <SectionCard 
               title="Legal Foresight & Predictions" 
               icon={<Zap size={28} className="text-primary" />} 
-              accentHighlight={false} 
-              className="border-2 border-primary/30 p-6 rounded-lg bg-primary/5 shadow-md"
+              className="border-2 border-primary/40 p-6 rounded-lg bg-primary/5 shadow-lg"
             >
               {legalForesight.overallRiskAssessment ? (
-                <div className="mb-6 p-4 rounded-md bg-background shadow">
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <ShieldAlert size={22} /> Overall Risk Assessment
+                <div className="mb-6 p-4 rounded-md bg-background shadow-md border border-primary/20">
+                  <h4 className="font-semibold text-xl text-primary mb-2 flex items-center gap-2">
+                    <ShieldAlert size={24} /> Overall Risk Assessment
                   </h4>
-                  <Badge variant={getRiskBadgeVariant(legalForesight.overallRiskAssessment)} className="text-sm mb-2 py-1 px-2.5">
+                  <Badge variant={getRiskBadgeVariant(legalForesight.overallRiskAssessment)} className="text-sm mb-3 py-1 px-3 shadow-sm">
                     {legalForesight.overallRiskAssessment.split(':')[0]}
                   </Badge>
                   <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">
                     {legalForesight.overallRiskAssessment.substring(legalForesight.overallRiskAssessment.indexOf(':') + 1).trim()}
                   </p>
                 </div>
-              ) : <p className="text-muted-foreground text-sm">No overall risk assessment available.</p>}
+              ) : <p className="text-muted-foreground text-sm italic">No overall risk assessment available.</p>}
 
               {legalForesight.predictedOutcomes.length > 0 ? (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
-                    <TrendingUp size={22} /> Potential Real-World Outcomes
+                  <h4 className="font-semibold text-xl text-primary mb-4 flex items-center gap-2">
+                    <TrendingUp size={24} /> Potential Real-World Outcomes
                   </h4>
                   <ul className="space-y-4">
                     {legalForesight.predictedOutcomes.map((outcome, index) => (
-                      <li key={`outcome-${index}`} className="p-4 border border-primary/20 rounded-md bg-background/70 shadow-sm hover:shadow-md transition-shadow">
-                        <p className="font-medium text-foreground/90 mb-1"><span className="font-semibold text-primary/90">Identified Issue:</span> {outcome.identifiedIssue}</p>
-                        <p className="text-sm text-foreground/80"><span className="font-semibold text-primary/80">Predicted Outcome:</span> {outcome.potentialRealWorldOutcome}</p>
+                      <li key={`outcome-${index}`} className="p-4 border border-primary/30 rounded-lg bg-background shadow-sm hover:shadow-lg transition-all duration-200">
+                        <p className="font-medium text-foreground/95 mb-1.5"><span className="font-semibold text-primary/90">Identified Issue:</span> {outcome.identifiedIssue}</p>
+                        <p className="text-sm text-foreground/85"><span className="font-semibold text-primary/80">Predicted Outcome:</span> {outcome.potentialRealWorldOutcome}</p>
                         {outcome.riskCategory && (
-                          <Badge variant="outline" className="mt-2 text-xs border-primary/30 text-primary/80">{outcome.riskCategory}</Badge>
+                          <Badge variant="outline" className="mt-2.5 text-xs border-primary/40 text-primary/90 bg-primary/10">{outcome.riskCategory}</Badge>
                         )}
                       </li>
                     ))}
                   </ul>
                 </div>
-              ) : <p className="text-muted-foreground text-sm">No specific potential outcomes were predicted for this document.</p>}
+              ) : <p className="text-muted-foreground text-sm italic">No specific potential outcomes were predicted.</p>}
 
               {legalForesight.strategicRecommendations.length > 0 ? (
                 <div>
-                  <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
-                    <ListChecks size={22} /> Strategic Recommendations
+                  <h4 className="font-semibold text-xl text-primary mb-4 flex items-center gap-2">
+                    <ListChecks size={24} /> Strategic Recommendations
                   </h4>
-                  <ul className="space-y-3 list-disc list-inside pl-2">
+                  <ul className="space-y-3.5 list-disc list-outside ml-5 marker:text-primary">
                     {legalForesight.strategicRecommendations.map((rec, index) => (
-                      <li key={`strategic-rec-${index}`} className="text-foreground/90 marker:text-primary leading-relaxed">{rec}</li>
+                      <li key={`strategic-rec-${index}`} className="text-foreground/90 leading-relaxed">{rec}</li>
                     ))}
                   </ul>
                 </div>
-              ) : <p className="text-muted-foreground text-sm">No strategic recommendations were generated for this document.</p>}
+              ) : <p className="text-muted-foreground text-sm italic">No strategic recommendations were generated.</p>}
             </SectionCard>
           ) : (
              <SectionCard 
               title="Legal Foresight & Predictions" 
               icon={<Zap size={28} className="text-primary" />} 
-              accentHighlight={false} 
               className="border-2 border-primary/30 p-6 rounded-lg bg-primary/5 shadow-md"
             >
-              <p className="text-muted-foreground">Legal foresight analysis was not performed or yielded no results for this document.</p>
+              <p className="text-muted-foreground italic">Legal foresight analysis was not performed or yielded no results.</p>
             </SectionCard>
           )}
           
-          { (hasContent) && <Separator className="my-8 border-primary/20"/>}
+          {(hasContent && (summary || flaggedClauses || suggestions || missingPoints)) && <Separator className="my-10 border-primary/20"/>}
 
           {summary ? (
             <SectionCard title="I. Document Breakdown" icon={<Search size={28} />}>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <FileText size={20} /> Overall Summary
+              <div className="space-y-5">
+                <div className="p-4 rounded-md bg-muted/30 border border-border">
+                  <h4 className="font-semibold text-lg text-primary mb-2.5 flex items-center gap-2">
+                    <FileText size={22} /> Overall Summary
                   </h4>
                   <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{summary.overallSummary || "No overall summary provided."}</p>
                 </div>
-                <Separator/>
-                <div>
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <Users size={20} /> Involved Parties
-                  </h4>
-                  {renderList(summary.involvedParties, "No specific parties identified.", <Users size={16} className="text-muted-foreground"/>)}
-                </div>
-                 <Separator/>
-                <div>
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <Briefcase size={20} /> Key Obligations
-                  </h4>
-                  {renderList(summary.keyObligations, "No specific key obligations identified.", <Briefcase size={16} className="text-muted-foreground"/>)}
-                </div>
-                 <Separator/>
-                <div>
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <CircleDollarSign size={20} /> Financial Terms
-                  </h4>
-                  {renderList(summary.financialTerms, "No specific financial terms identified.", <CircleDollarSign size={16} className="text-muted-foreground"/>)}
-                </div>
-                 <Separator/>
-                <div>
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                    <CalendarDays size={20} /> Key Dates & Durations
-                  </h4>
-                  {renderList(summary.keyDates, "No specific key dates or durations identified.", <CalendarDays size={16} className="text-muted-foreground"/>)}
+                <Separator className="my-5"/>
+                <div className="grid md:grid-cols-2 gap-x-6 gap-y-5">
+                    <div>
+                        <h4 className="font-semibold text-lg text-primary mb-2.5 flex items-center gap-2">
+                        <Users size={22} /> Involved Parties
+                        </h4>
+                        {renderList(summary.involvedParties, "No specific parties identified.", <Users size={16} className="text-primary/70"/>)}
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-lg text-primary mb-2.5 flex items-center gap-2">
+                        <Briefcase size={22} /> Key Obligations
+                        </h4>
+                        {renderList(summary.keyObligations, "No specific key obligations identified.", <Briefcase size={16} className="text-primary/70"/>)}
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-lg text-primary mb-2.5 flex items-center gap-2">
+                        <CircleDollarSign size={22} /> Financial Terms
+                        </h4>
+                        {renderList(summary.financialTerms, "No specific financial terms identified.", <CircleDollarSign size={16} className="text-primary/70"/>)}
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-lg text-primary mb-2.5 flex items-center gap-2">
+                        <CalendarDays size={22} /> Key Dates & Durations
+                        </h4>
+                        {renderList(summary.keyDates, "No specific key dates or durations identified.", <CalendarDays size={16} className="text-primary/70"/>)}
+                    </div>
                 </div>
               </div>
             </SectionCard>
           ) : (
             <SectionCard title="I. Document Breakdown" icon={<Search size={28} />}>
-              <p className="text-muted-foreground">No summary breakdown was generated for this document.</p>
+              <p className="text-muted-foreground italic">No summary breakdown was generated for this document.</p>
             </SectionCard>
           )}
 
-          {(summary) && <Separator className="my-6" />}
+          {(summary) && <Separator className="my-8" />}
 
           {flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0 ? (
             <SectionCard title="II. Critical Clause Flags" icon={<AlertTriangle size={28} />} accentHighlight>
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {flaggedClauses.criticalClauses.map((clause, index) => (
-                  <li key={index} className="p-4 border border-accent/30 rounded-lg bg-accent-light shadow-sm hover:shadow-md transition-shadow">
-                    <h4 className="font-semibold text-on-accent mb-1 flex items-center">
-                      <ChevronRight size={20} className="mr-1 text-accent" /> Clause Text:
+                  <li key={index} className="p-4 border border-accent/40 rounded-lg bg-accent/10 shadow-md hover:shadow-lg transition-all duration-200">
+                    <h4 className="font-semibold text-on-accent text-lg mb-1.5 flex items-center">
+                      <ChevronRight size={22} className="mr-1.5 text-accent" /> Clause Text:
                     </h4>
-                    <p className="italic text-foreground/80 mb-2 ml-3">"{clause.clauseText}"</p>
-                     <h5 className="font-semibold text-on-accent mt-2 mb-1 flex items-center">
-                      <AlertTriangle size={18} className="mr-1 text-accent" /> Reason for Flag:
+                    <p className="italic text-foreground/85 mb-2.5 ml-4 text-base">"{clause.clauseText}"</p>
+                     <h5 className="font-semibold text-on-accent text-md mt-3 mb-1.5 flex items-center">
+                      <AlertTriangle size={20} className="mr-1.5 text-accent" /> Reason for Flag:
                     </h5>
-                    <p className="text-sm text-foreground/70 ml-3 mb-2">{clause.reason}</p>
+                    <p className="text-sm text-foreground/75 ml-4 mb-2.5">{clause.reason}</p>
                     {clause.riskTags && clause.riskTags.length > 0 && (
                       <>
-                        <h5 className="font-semibold text-on-accent mt-2 mb-1 flex items-center">
-                          <Tag size={18} className="mr-1 text-accent" /> Associated Risk Tags:
+                        <h5 className="font-semibold text-on-accent text-md mt-3 mb-2 flex items-center">
+                          <Tag size={20} className="mr-1.5 text-accent" /> Associated Risk Tags:
                         </h5>
-                        <div className="ml-3 flex flex-wrap gap-2">
+                        <div className="ml-4 flex flex-wrap gap-2.5">
                           {clause.riskTags.map(tag => (
-                            <Badge key={tag} variant="outline" className="text-xs border-accent/50 text-accent bg-accent/10">{tag}</Badge>
+                            <Badge key={tag} variant="outline" className="text-xs border-accent/60 text-accent bg-accent/20 shadow-sm">{tag}</Badge>
                           ))}
                         </div>
                       </>
@@ -293,60 +281,60 @@ export function AnalysisDisplay({
             </SectionCard>
           ) : (
             <SectionCard title="II. Critical Clause Flags" icon={<AlertTriangle size={28} />} accentHighlight>
-              <p className="text-muted-foreground">No critical clauses were flagged by the AI for this document.</p>
+              <p className="text-muted-foreground italic">No critical clauses were flagged by the AI for this document.</p>
             </SectionCard>
           )}
 
-          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0)) && <Separator className="my-6" />}
+          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0)) && <Separator className="my-8" />}
 
           {suggestions?.suggestions && suggestions.suggestions.length > 0 ? (
             <SectionCard title="III. Improvement Suggestions" icon={<Lightbulb size={28} />} accentHighlight>
-              <ul className="space-y-3 list-disc list-inside pl-2">
+              <ul className="space-y-3.5 list-disc list-outside ml-5 marker:text-accent">
                 {suggestions.suggestions.map((suggestion, index) => (
-                  <li key={index} className="text-foreground/90 marker:text-accent leading-relaxed">{suggestion}</li>
+                  <li key={index} className="text-foreground/90 leading-relaxed">{suggestion}</li>
                 ))}
               </ul>
             </SectionCard>
           ) : (
              <SectionCard title="III. Improvement Suggestions" icon={<Lightbulb size={28} />} accentHighlight>
-              <p className="text-muted-foreground">No improvement suggestions were generated for this document.</p>
+              <p className="text-muted-foreground italic">No improvement suggestions were generated.</p>
             </SectionCard>
           )}
 
-          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-6" />}
+          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-8" />}
           
           {missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary) ? (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
               {missingPoints.missingPoints.length > 0 ? (
-                <div className="mb-4">
-                  <h4 className="font-semibold text-on-accent mb-2">Missing Information Identified:</h4>
-                  <ul className="space-y-2 list-disc list-inside pl-2">
+                <div className="mb-5">
+                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Missing Information Identified:</h4>
+                  <ul className="space-y-3 list-disc list-outside ml-5 marker:text-accent">
                     {missingPoints.missingPoints.map((point, index) => (
-                      <li key={`missing-${index}`} className="text-foreground/90 marker:text-accent leading-relaxed">{point}</li>
+                      <li key={`missing-${index}`} className="text-foreground/90 leading-relaxed">{point}</li>
                     ))}
                   </ul>
                 </div>
-              ) : <p className="text-muted-foreground text-sm">No specific missing information was identified.</p>}
+              ) : <p className="text-muted-foreground text-sm italic">No specific missing information was identified.</p>}
               {missingPoints.recommendations.length > 0 ? (
-                <div className="mb-4">
-                  <h4 className="font-semibold text-on-accent mb-2">Recommendations:</h4>
-                  <ul className="space-y-2 list-disc list-inside pl-2">
+                <div className="mb-5">
+                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Recommendations:</h4>
+                  <ul className="space-y-3 list-disc list-outside ml-5 marker:text-accent">
                     {missingPoints.recommendations.map((rec, index) => (
-                      <li key={`rec-${index}`} className="text-foreground/90 marker:text-accent leading-relaxed">{rec}</li>
+                      <li key={`rec-${index}`} className="text-foreground/90 leading-relaxed">{rec}</li>
                     ))}
                   </ul>
                 </div>
-              ): <p className="text-muted-foreground text-sm">No specific recommendations regarding missing points.</p>}
+              ): <p className="text-muted-foreground text-sm italic">No specific recommendations regarding missing points.</p>}
                {missingPoints.summary ? (
-                 <div className="mt-4">
-                  <h4 className="font-semibold text-on-accent mb-2">Summary of Missing Points:</h4>
+                 <div className="mt-5 pt-4 border-t border-accent/20">
+                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Summary of Missing Points:</h4>
                   <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{missingPoints.summary}</p>
                 </div>
-              ): <p className="text-muted-foreground text-sm mt-4">No summary for missing points was generated.</p>}
+              ): <p className="text-muted-foreground text-sm italic mt-4">No summary for missing points was generated.</p>}
             </SectionCard>
           ) : (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
-              <p className="text-muted-foreground">Missing points analysis was not performed or yielded no results for this document.</p>
+              <p className="text-muted-foreground italic">Missing points analysis was not performed or yielded no results.</p>
             </SectionCard>
           )}
 

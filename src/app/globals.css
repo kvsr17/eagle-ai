@@ -24,8 +24,8 @@ body {
     --secondary: 231 40% 90%; /* Lighter blue for secondary elements */
     --secondary-foreground: 217 89% 61%; /* New Blue for text on secondary */
 
-    --muted: 0 0% 90%; /* Slightly darker gray for muted backgrounds */
-    --muted-foreground: 0 0% 45.1%; /* Medium Gray for muted text */
+    --muted: 0 0% 92%; /* Slightly darker gray for muted backgrounds - increased contrast */
+    --muted-foreground: 0 0% 40%; /* Medium Gray for muted text - increased contrast */
 
     --accent: 261 46% 63%;         /* Soft Purple: #9575CD */
     --accent-foreground: 0 0% 98%; /* White-ish for text on accent, can be adjusted */
@@ -36,7 +36,7 @@ body {
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89.8%;
+    --border: 0 0% 85%; /* Slightly darker border for better definition */
     --input: 0 0% 89.8%;
     --ring: 217 89% 61%; /* New Blue for rings */
 
@@ -63,7 +63,7 @@ body {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 3.9%;
+    --card: 0 0% 7%; /* Slightly lighter card for dark mode */
     --card-foreground: 0 0% 98%;
 
     --popover: 0 0% 3.9%;
@@ -75,8 +75,8 @@ body {
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 0 0% 12%; /* Darker muted */
+    --muted-foreground: 0 0% 60%; /* Lighter muted text */
 
     --accent: 261 46% 63%; /* Soft Purple */
     --accent-foreground: 0 0% 98%; /* White-ish */
@@ -85,7 +85,7 @@ body {
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14.9%;
+    --border: 0 0% 20%; /* Lighter border for dark mode */
     --input: 0 0% 14.9%;
     --ring: 217 89% 61%; /* New Blue */
 
@@ -112,6 +112,8 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -211,18 +213,30 @@ body {
     border-radius: 0 !important;
     background-color: white !important;
   }
+  
+  /* Styles for sub-cards or bordered list items within the main card */
+  .printable-area .card .p-4.border { /* Targets list items like critical clauses */
+      border: 1px solid #ddd !important;
+      background-color: #fdfdfd !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 0.5rem !important; /* Adjust padding for print */
+      margin-bottom: 0.5rem !important;
+  }
+
 
   .printable-area .card-header,
   .printable-area .card-content,
   .printable-area .card-footer { /* Ensure footer exists or used in AnalysisDisplay */
     padding: 1rem !important; /* Consistent padding within card sections */
     color: black !important;
+    border-color: #ddd !important;
   }
   .printable-area .card-header.border-b-2 { /* Specific for CardHeader if it has a bottom border */
-     border-bottom-width: 1px !important;
+     border-bottom-width: 1px !important; /* Make it thinner for print */
      border-color: #ddd !important;
   }
-  .printable-area .card-header.bg-primary\/5 { /* Example if header has specific bg */
+  .printable-area .card-header.bg-primary\/10 { /* Example if header has specific bg */
       background-color: #f0f0f0 !important; /* Light gray for print */
   }
 
@@ -234,10 +248,13 @@ body {
     margin-bottom: 0.4rem;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
+    font-weight: 600 !important;
   }
   .printable-area h1 { font-size: 18pt !important; } /* Title of the report in CardHeader */
   .printable-area h3 { font-size: 14pt !important; } /* SectionCard titles */
   .printable-area h4 { font-size: 12pt !important; } /* Sub-headers within sections */
+  .printable-area h5 { font-size: 11pt !important; }
+
 
   .printable-area p, .printable-area li, .printable-area div:not(.card):not(.card-header):not(.card-content):not(.card-footer) {
      page-break-inside: avoid !important;
@@ -265,9 +282,11 @@ body {
     color: #4A0072 !important; /* Dark purple, or just black */
   }
   .printable-area .bg-primary\/5,
+  .printable-area .bg-primary\/10,
   .printable-area .bg-primary-light,
   .printable-area .bg-accent\/10, /* from flaggedClauses */
-  .printable-area .bg-accent-light {
+  .printable-area .bg-accent-light,
+  .printable-area .bg-muted\/30 {
      background-color: #f9f9f9 !important; /* Very light gray for subtle backgrounds */
      border: 1px solid #eee !important;
      padding: 0.5rem !important;
@@ -314,7 +333,9 @@ body {
   .printable-area .border-r,
   .printable-area .border-primary\/20,
   .printable-area .border-primary\/30,
+  .printable-area .border-primary\/40,
   .printable-area .border-accent\/30,
+  .printable-area .border-accent\/40,
   .printable-area .border-accent\/50,
   .printable-area .border-accent\/60,
   .printable-area .border-primary\/50,
@@ -349,6 +370,12 @@ body {
     border-color: #c0c0c0 !important;
     color: #333 !important;
   }
+  .printable-area .badge[data-variant="outline"].border-primary\/40,
+  .printable-area .badge[data-variant="outline"].border-accent\/60 {
+    border-color: #aaa !important;
+    background-color: #f0f0f0 !important; /* ensure some background for outline badges */
+    color: black !important;
+  }
 
 
   /* Hide scrollbars in print */
@@ -359,6 +386,3 @@ body {
     scrollbar-width: none !important; /* For Firefox */
   }
 }
-
-
-    

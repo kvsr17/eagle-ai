@@ -2,9 +2,7 @@
 "use client";
 
 import type { ChangeEvent } from 'react';
-import { useState, useEffect } from 'react';
-// import { useAuth } from '@/contexts/AuthContext'; // Removed useAuth
-// import { useRouter } from 'next/navigation'; // Removed useRouter if only used for auth redirects
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Scale } from 'lucide-react'; // Added Scale
+import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2 } from 'lucide-react';
 import { ChatInterface } from '@/components/ChatInterface';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
@@ -25,9 +23,6 @@ import { Label } from '@/components/ui/label';
 
 
 export default function HomePage() {
-  // const { currentUser, loading: authLoading } = useAuth(); // Removed Auth hook
-  // const router = useRouter(); // Removed Router hook
-
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -41,23 +36,6 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<SuggestImprovementsOutput | null>(null);
   const [missingPoints, setMissingPoints] = useState<IdentifyMissingPointsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
-
-  // useEffect(() => { // Removed auth-related effect
-  //   if (!authLoading && !currentUser) {
-  //     router.push('/login');
-  //   }
-  // }, [currentUser, authLoading, router]);
-
-  // if (authLoading || !currentUser) { // Removed auth-related loading/redirect state
-  //   return (
-  //     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] py-12">
-  //       <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-  //       <p className="text-muted-foreground">
-  //           {authLoading ? "Loading application..." : "Redirecting to login..."}
-  //       </p>
-  //     </div>
-  //   );
-  // }
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -187,7 +165,7 @@ export default function HomePage() {
         setError(`All AI analyses failed. Errors:\n${errorMessages}`);
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check console or error display.", variant: "destructive" });
       } else if (anyFailed) {
-         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Check report for details and potential error messages.", variant: "default" });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Check the report for details.", variant: "default" });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -209,17 +187,18 @@ export default function HomePage() {
 
   return (
     <div className="w-full">
-      <div className="max-w-md mx-auto w-full no-print">
-        <Card className="shadow-lg rounded-xl border-primary/20">
+      <div className="max-w-lg mx-auto w-full no-print"> {/* Increased max-width slightly */}
+        <Card className="shadow-xl rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
-            <div className="inline-flex items-center gap-2 mx-auto">
-              <ScanEye size={28} className="text-primary" />
+            <div className="inline-flex items-center gap-2 mx-auto mb-2">
+              <ScanEye size={32} className="text-primary" /> {/* Icon size increased */}
               <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
             </div>
+            <p className="text-muted-foreground text-sm">Predictive Legal Document Analysis</p>
           </CardHeader>
-          <CardContent className="space-y-6 px-6 pb-6">
+          <CardContent className="space-y-6 px-6 pb-8"> {/* Increased bottom padding */}
             <h2 className="text-3xl font-bold text-center text-foreground">Upload Document</h2>
-            <div className="space-y-4">
+            <div className="space-y-5"> {/* Increased spacing */}
               <div>
                 <Input
                   id="file-upload"
@@ -231,21 +210,21 @@ export default function HomePage() {
                 />
                 <label
                   htmlFor="file-upload"
-                  className="flex flex-col items-center justify-center p-8 border border-input rounded-lg text-center hover:border-primary/40 transition-colors cursor-pointer bg-card"
+                  className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-input rounded-lg text-center hover:border-primary/50 transition-colors cursor-pointer bg-card hover:bg-primary/5" /* Adjusted padding and hover */
                 >
-                  <div className="p-4 bg-primary/10 rounded-lg mb-3">
-                    <FileUp size={36} className="text-primary" />
+                  <div className="p-4 bg-primary/10 rounded-full mb-4"> {/* Icon background made round */}
+                    <FileUp size={40} className="text-primary" /> {/* Icon size increased */}
                   </div>
-                  <p className="text-base font-semibold text-foreground">Upload Document</p>
+                  <p className="text-lg font-semibold text-foreground">Upload Document</p> {/* Text size increased */}
                   <p className="text-sm text-muted-foreground">or drop a file here</p>
                 </label>
                 {fileName && (
-                  <p className="text-sm text-green-600 mt-3 text-center">Selected: {fileName}</p>
+                  <p className="text-sm text-green-600 font-medium mt-4 text-center">Selected: {fileName}</p> /* Increased margin */
                 )}
               </div>
 
               <div>
-                <Label htmlFor="document-context" className="text-sm font-medium text-foreground mb-1 block">
+                <Label htmlFor="document-context" className="text-sm font-medium text-foreground mb-2 block"> {/* Increased margin */}
                   Document Context (Optional)
                 </Label>
                 <Textarea
@@ -253,10 +232,10 @@ export default function HomePage() {
                   placeholder="E.g., 'Employment contract for a software engineer', 'NDA for a startup partnership'. This helps improve analysis accuracy."
                   value={documentContext}
                   onChange={(e) => setDocumentContext(e.target.value)}
-                  className="min-h-[60px] text-sm"
+                  className="min-h-[70px] text-sm shadow-sm" /* Increased min-height and added shadow */
                   disabled={isLoading}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Providing context can significantly enhance the AI's understanding and analysis.</p>
+                <p className="text-xs text-muted-foreground mt-2">Providing context can significantly enhance the AI's understanding and analysis.</p> {/* Increased margin */}
               </div>
             </div>
 
@@ -264,7 +243,7 @@ export default function HomePage() {
             <Button
               onClick={processDocument}
               disabled={(!documentText && !imageDataUri && !fileName) || isLoading}
-              className="w-full text-lg py-3"
+              className="w-full text-lg py-3 h-12" /* Consistent height */
               size="lg"
             >
                {isLoading ? (
@@ -285,25 +264,25 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {isLoading && <div className="no-print mt-6"><LoadingIndicator text="Generating insights & predictions..." /></div>}
+      {isLoading && <div className="no-print mt-8"><LoadingIndicator text="Generating insights & predictions..." /></div>} {/* Increased margin */}
 
       {error && !isLoading && (
-        <div className="no-print mt-6 max-w-lg mx-auto">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error During Analysis</AlertTitle>
-            <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
+        <div className="no-print mt-8 max-w-xl mx-auto"> {/* Increased margin and max-width */}
+          <Alert variant="destructive" className="shadow-md">
+            <AlertCircle className="h-5 w-5" /> {/* Icon size increased */}
+            <AlertTitle className="text-lg">Error During Analysis</AlertTitle> {/* Text size increased */}
+            <AlertDescription className="whitespace-pre-wrap text-base">{error}</AlertDescription> {/* Text size increased */}
           </Alert>
         </div>
       )}
 
-      <div id="report-content" className="printable-area mt-8">
+      <div id="report-content" className="printable-area mt-10"> {/* Increased margin */}
         {!isLoading && hasResults && (
-           <div className="text-center mb-4 no-print">
+           <div className="text-center mb-6 no-print"> {/* Increased margin */}
              <Button
                 onClick={handlePrint}
                 variant="outline"
-                className="w-full md:w-auto"
+                className="w-full md:w-auto shadow-sm hover:shadow-md"
                 size="lg"
               >
                 <Printer className="mr-2 h-5 w-5" />
@@ -325,7 +304,7 @@ export default function HomePage() {
       </div>
 
       {!isLoading && hasResults && (documentText || imageDataUri) && fileName && (
-        <div className="mt-8 no-print">
+        <div className="mt-10 no-print"> {/* Increased margin */}
           <ChatInterface
             documentText={documentText}
             imageDataUri={imageDataUri}
@@ -334,7 +313,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="text-center text-muted-foreground mt-12 py-4 text-xs no-print">
+      <footer className="text-center text-muted-foreground mt-16 py-6 text-xs no-print border-t"> {/* Increased margin & padding, added border */}
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
         <p>Please consult with a qualified legal professional for any legal matters.</p>
       </footer>
