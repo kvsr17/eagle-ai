@@ -132,8 +132,8 @@ body {
 
 @media print {
   html, body {
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background-color: white !important;
@@ -222,6 +222,7 @@ body {
       border-radius: 0 !important;
       padding: 0.5rem !important; /* Adjust padding for print */
       margin-bottom: 0.5rem !important;
+      page-break-inside: avoid !important;
   }
 
 
@@ -236,8 +237,13 @@ body {
      border-bottom-width: 1px !important; /* Make it thinner for print */
      border-color: #ddd !important;
   }
-  .printable-area .card-header.bg-primary\/10 { /* Example if header has specific bg */
+  .printable-area .card-header.bg-primary\/10, /* Tailwind /10 opacity */
+  .printable-area .card-header.bg-primary-light { /* Custom primary light */
       background-color: #f0f0f0 !important; /* Light gray for print */
+      color: black !important;
+  }
+  .printable-area .card-header .text-primary {
+      color: black !important; /* Ensure header text is black */
   }
 
 
@@ -256,7 +262,7 @@ body {
   .printable-area h5 { font-size: 11pt !important; }
 
 
-  .printable-area p, .printable-area li, .printable-area div:not(.card):not(.card-header):not(.card-content):not(.card-footer) {
+  .printable-area p, .printable-area li, .printable-area div:not([class*="card"]):not([class*="header"]):not([class*="content"]):not([class*="footer"]) {
      page-break-inside: avoid !important;
      font-size: 10pt !important;
      line-height: 1.4 !important;
@@ -386,3 +392,5 @@ body {
     scrollbar-width: none !important; /* For Firefox */
   }
 }
+
+    

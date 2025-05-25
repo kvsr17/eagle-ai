@@ -2,7 +2,7 @@
 "use client";
 
 import type { ChangeEvent } from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react'; // Removed useEffect as it's not directly used for auth redirect anymore
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Wand2 } from 'lucide-react';
+import { ChatInterface } from '@/components/ChatInterface';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
 import { flagCriticalClauses, type FlagCriticalClausesOutput, type FlagCriticalClausesInput } from '@/ai/flows/flag-critical-clauses';
@@ -18,7 +19,6 @@ import { suggestImprovements, type SuggestImprovementsOutput, type SuggestImprov
 import { identifyMissingPoints, type IdentifyMissingPointsOutput, type IdentifyMissingPointsInput } from '@/ai/flows/identify-missing-points';
 import { predictLegalOutcomes, type PredictLegalOutcomesOutput, type PredictLegalOutcomesInput } from '@/ai/flows/predict-legal-outcomes';
 import { autoFixClause, type AutoFixClauseInput, type AutoFixClauseOutput } from '@/ai/flows/auto-fix-clause';
-import { ChatInterface } from '@/components/ChatInterface'; // Added import
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
@@ -56,7 +56,7 @@ export default function HomePage() {
   const [documentContext, setDocumentContext] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isBatchFixing, setIsBatchFixing] = useState(false);
-  const [batchFixProgress, setBatchFixProgress] = useState<string | null>(null); // For sequential progress
+  const [batchFixProgress, setBatchFixProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -363,7 +363,6 @@ export default function HomePage() {
 
     const currentDocumentContext = documentContext.trim() || (fileName ? `Context related to document: ${fileName}` : "General Legal Document");
 
-    // Create copies of the state arrays to work with, to avoid direct mutation issues during async operations
     let tempFlaggedClauses = [...uiFlaggedClauses];
     let tempMissingPoints = [...uiMissingPoints];
 
@@ -378,21 +377,18 @@ export default function HomePage() {
         toast({ title: "No New Fixes Needed", description: "All items seem to be addressed or no auto-fixable items found." });
         setIsBatchFixing(false);
         setBatchFixProgress(null);
-        // Wait for state to settle before printing
-        setTimeout(() => { handlePrint(); }, 100); // Small delay
+        setTimeout(() => { handlePrint(); }, 100);
         return;
     }
 
-    // Process Flagged Clauses Sequentially
     for (let i = 0; i < clausesToFix.length; i++) {
       const clause = clausesToFix[i];
       setBatchFixProgress(`Fixing flagged clause ${i + 1} of ${clausesToFix.length}...`);
       
-      // Update the specific item in the temporary array for loading state
       tempFlaggedClauses = tempFlaggedClauses.map(fc => 
         fc.id === clause.id ? { ...fc, fixLoading: true } : fc
       );
-      setUiFlaggedClauses(tempFlaggedClauses); // Update UI
+      setUiFlaggedClauses(tempFlaggedClauses); 
 
       try {
         const result = await autoFixClause({
@@ -405,7 +401,7 @@ export default function HomePage() {
           ...fc,
           currentClauseText: result.fixedClauseText,
           currentReason: result.justificationNote || "AI proposed fix applied.",
-          isFixProposed: true, // Mark as proposed, not accepted
+          isFixProposed: true, 
           isFixAccepted: false,
           fixLoading: false,
         } : fc);
@@ -415,10 +411,9 @@ export default function HomePage() {
         tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false } : fc);
         itemsFailedToFix++;
       }
-      setUiFlaggedClauses(tempFlaggedClauses); // Update UI after attempt
+      setUiFlaggedClauses(tempFlaggedClauses); 
     }
 
-    // Process Missing Points Sequentially
     for (let i = 0; i < pointsToFix.length; i++) {
       const point = pointsToFix[i];
       setBatchFixProgress(`Fixing missing point ${i + 1} of ${pointsToFix.length}... (Overall ${clausesToFix.length + i + 1}/${totalItemsToFix})`);
@@ -426,19 +421,19 @@ export default function HomePage() {
       tempMissingPoints = tempMissingPoints.map(mp => 
         mp.id === point.id ? { ...mp, fixLoading: true } : mp
       );
-      setUiMissingPoints(tempMissingPoints); // Update UI
+      setUiMissingPoints(tempMissingPoints); 
 
       try {
         const result = await autoFixClause({
-          problemDescription: point.text, // Original problem description
+          problemDescription: point.text, 
           documentContext: currentDocumentContext,
           fixType: "generate",
         });
         tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? {
           ...mp,
-          currentText: result.fixedClauseText, // The fix is the new clause
+          currentText: result.fixedClauseText, 
           justificationNote: result.justificationNote,
-          isFixProposed: true, // Mark as proposed
+          isFixProposed: true, 
           isFixAccepted: false,
           fixLoading: false,
         } : mp);
@@ -448,7 +443,7 @@ export default function HomePage() {
         tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? { ...mp, fixLoading: false } : mp);
         itemsFailedToFix++;
       }
-      setUiMissingPoints(tempMissingPoints); // Update UI after attempt
+      setUiMissingPoints(tempMissingPoints);
     }
 
     setBatchFixProgress("Auto-fix process completed.");
@@ -458,26 +453,24 @@ export default function HomePage() {
     } else if (itemsFixedSuccessfully > 0) {
         toast({ title: "Auto-Fix Applied", description: `Report updated with ${itemsFixedSuccessfully} AI suggestions. Preparing download.` });
     } else {
-        // This case should have been caught earlier if totalItemsToFix was 0
         toast({ title: "No Fixes Applied", description: "No items were updated during the batch process." });
     }
 
     setIsBatchFixing(false);
     setBatchFixProgress(null);
 
-    // Wait for all state updates to reflect in DOM before printing
     setTimeout(() => {
       handlePrint();
-    }, 500); // Slightly longer delay to ensure DOM updates
+    }, 500); 
   };
 
 
   return (
     <div className="w-full">
-      <div className="max-w-md mx-auto w-full no-print">
+      <div className="no-print max-w-md mx-auto w-full">
         <Card className="shadow-xl rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
-            <ScanEye size={40} className="text-primary mx-auto mb-2" />
+            <ScanEye size={48} className="text-primary mx-auto mb-3" /> {/* Increased size */}
             <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-8">
@@ -497,7 +490,7 @@ export default function HomePage() {
                   className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-input rounded-lg text-center hover:border-primary/50 transition-colors cursor-pointer bg-card hover:bg-primary/5"
                 >
                   <div className="p-3 bg-primary/10 rounded-lg mb-3">
-                    <FileUp size={36} className="text-primary" />
+                    <FileUp size={40} className="text-primary" /> {/* Increased size */}
                   </div>
                   <p className="text-md font-semibold text-foreground">Upload Document</p>
                   <p className="text-xs text-muted-foreground">or drop a file here</p>
@@ -547,18 +540,18 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {isLoading && <div className="no-print mt-8"><LoadingIndicator text="Generating insights & predictions..." /></div>}
-      {isBatchFixing && (
-        <div className="no-print mt-8">
-            <LoadingIndicator text={batchFixProgress || "Applying auto-fixes and preparing report..."} />
-        </div>
-      )}
+      <div className="no-print mt-8">
+        {isLoading && <LoadingIndicator text="Generating insights & predictions..." />}
+        {isBatchFixing && (
+          <LoadingIndicator text={batchFixProgress || "Applying auto-fixes and preparing report..."} />
+        )}
+      </div>
 
 
       {error && !isLoading && !isBatchFixing && (
         <div className="no-print mt-8 max-w-xl mx-auto">
           <Alert variant="destructive" className="shadow-md">
-            <AlertCircle className="h-6 w-6" />
+            <AlertCircle className="h-6 w-6" /> {/* Increased size */}
             <AlertTitle className="text-lg">Error During Analysis</AlertTitle>
             <AlertDescription className="whitespace-pre-wrap text-base">{error}</AlertDescription>
           </Alert>
@@ -567,7 +560,7 @@ export default function HomePage() {
 
       <div id="report-content" className="printable-area mt-10">
         {!isLoading && !isBatchFixing && hasResults && (
-           <div className="text-center mb-6 no-print space-y-3 md:space-y-0 md:flex md:items-center md:justify-center md:space-x-3"> {/* Flex layout for desktop */}
+           <div className="text-center mb-6 no-print space-y-3 md:space-y-0 md:flex md:items-center md:justify-center md:space-x-3">
              <Button
                 onClick={handlePrint}
                 variant="outline"
@@ -626,7 +619,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="text-center text-muted-foreground mt-16 py-6 text-xs no-print border-t">
+      <footer className="no-print text-center text-muted-foreground mt-16 py-6 text-xs border-t">
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
         <p>Please consult with a qualified legal professional for any legal matters.</p>
       </footer>
