@@ -8,3 +8,4 @@ import '@/ai/flows/summarize-legal-document.ts';
 import '@/ai/flows/identify-missing-points.ts';
 import '@/ai/flows/predict-legal-outcomes.ts';
 import '@/ai/flows/chatWithDocument.ts'; // Added new chat flow
+import '@/ai/flows/auto-fix-clause.ts'; // Added new auto-fix flow

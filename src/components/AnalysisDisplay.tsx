@@ -16,34 +16,50 @@ import {
   CalendarDays,
   CircleDollarSign,
   Tag,
-  Archive // Placeholder for Report icon
+  Archive,
+  Sparkles, // For Auto-Fix icon
+  CheckCircle2, // For Accepted Fix
+  RotateCcw, // For Revert
+  Edit3, // For Edit Further (placeholder)
+  Loader2 // For loading state of auto-fix
 } from 'lucide-react';
 import { SectionCard } from './SectionCard';
 import type { SummarizeLegalDocumentOutput } from '@/ai/flows/summarize-legal-document';
-import type { FlagCriticalClausesOutput } from '@/ai/flows/flag-critical-clauses';
+// import type { FlagCriticalClausesOutput } from '@/ai/flows/flag-critical-clauses'; // Using UIFlaggedClause instead
+// import type { IdentifyMissingPointsOutput } from '@/ai/flows/identify-missing-points'; // Using UIMissingPoint instead
+import type { UIFlaggedClause, UIMissingPoint } from '@/app/page'; // Import enhanced types
 import type { SuggestImprovementsOutput } from '@/ai/flows/suggest-improvements';
-import type { IdentifyMissingPointsOutput } from '@/ai/flows/identify-missing-points';
 import type { PredictLegalOutcomesOutput } from '@/ai/flows/predict-legal-outcomes';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface AnalysisDisplayProps {
   fileName: string | null;
+  documentContext: string;
   summary: SummarizeLegalDocumentOutput | null;
-  flaggedClauses: FlagCriticalClausesOutput | null;
+  flaggedClauses: UIFlaggedClause[]; // Use enhanced type
   suggestions: SuggestImprovementsOutput | null;
-  missingPoints: IdentifyMissingPointsOutput | null;
+  missingPoints: UIMissingPoint[]; // Use enhanced type
   legalForesight: PredictLegalOutcomesOutput | null;
+  onApplyAutoFix: (itemId: string, itemType: 'flaggedClause' | 'missingPoint') => void;
+  onAcceptFix: (itemId: string, itemType: 'flaggedClause' | 'missingPoint') => void;
+  onRevertFix: (itemId: string, itemType: 'flaggedClause' | 'missingPoint') => void;
 }
 
 export function AnalysisDisplay({
   fileName,
+  documentContext, // Added prop
   summary,
   flaggedClauses,
   suggestions,
   missingPoints,
   legalForesight,
+  onApplyAutoFix,
+  onAcceptFix,
+  onRevertFix,
 }: AnalysisDisplayProps) {
   const hasContent =
     summary?.overallSummary ||
@@ -51,9 +67,9 @@ export function AnalysisDisplay({
     (summary?.keyObligations && summary.keyObligations.length > 0 && summary.keyObligations[0]?.toLowerCase() !== 'not specified') ||
     (summary?.financialTerms && summary.financialTerms.length > 0 && summary.financialTerms[0]?.toLowerCase() !== 'not specified') ||
     (summary?.keyDates && summary.keyDates.length > 0 && summary.keyDates[0]?.toLowerCase() !== 'not specified') ||
-    (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) ||
+    (flaggedClauses && flaggedClauses.length > 0) ||
     (suggestions?.suggestions && suggestions.suggestions.length > 0) ||
-    (missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary)) ||
+    (missingPoints && missingPoints.length > 0) ||
     (legalForesight && (legalForesight.overallRiskAssessment || legalForesight.predictedOutcomes.length > 0 || legalForesight.strategicRecommendations.length > 0));
 
   const renderList = (items: string[] | undefined, emptyMessage: string, icon?: React.ReactNode) => {
@@ -202,7 +218,7 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
           
-          {(hasContent && (summary || flaggedClauses || suggestions || missingPoints)) && <Separator className="my-10 border-primary/20"/>}
+          {(hasContent && (summary || flaggedClauses.length > 0 || suggestions || missingPoints.length > 0)) && <Separator className="my-10 border-primary/20"/>}
 
           {summary ? (
             <SectionCard title="I. Document Breakdown" icon={<Search size={28} />}>
@@ -248,21 +264,47 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
 
-          {(summary) && <Separator className="my-8" />}
+          {summary && <Separator className="my-8" />}
 
-          {flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0 ? (
+          {flaggedClauses && flaggedClauses.length > 0 ? (
             <SectionCard title="II. Critical Clause Flags" icon={<AlertTriangle size={28} />} accentHighlight>
               <ul className="space-y-5">
-                {flaggedClauses.criticalClauses.map((clause, index) => (
-                  <li key={index} className="p-4 border border-accent/40 rounded-lg bg-accent/10 shadow-md hover:shadow-lg transition-all duration-200">
+                {flaggedClauses.map((clause) => (
+                  <li key={clause.id} className={cn("p-4 border rounded-lg shadow-md hover:shadow-lg transition-all duration-200",
+                    clause.isFixAccepted ? "border-green-400 bg-green-50/30" : "border-accent/40 bg-accent/10"
+                  )}>
                     <h4 className="font-semibold text-on-accent text-lg mb-1.5 flex items-center">
                       <ChevronRight size={22} className="mr-1.5 text-accent" /> Clause Text:
                     </h4>
-                    <p className="italic text-foreground/85 mb-2.5 ml-4 text-base">"{clause.clauseText}"</p>
+                    <p className={cn("italic text-foreground/85 mb-2.5 ml-4 text-base", clause.isFixProposed && !clause.isFixAccepted && "line-through opacity-70")}>
+                      "{clause.originalClauseText}"
+                    </p>
+                    {clause.isFixProposed && !clause.isFixAccepted && (
+                      <div className="ml-4 p-3 my-2 border border-yellow-400 bg-yellow-50/50 rounded">
+                        <p className="font-semibold text-yellow-700 mb-1">Suggested Fix:</p>
+                        <p className="italic text-yellow-800/90 text-base">"{clause.currentClauseText}"</p>
+                      </div>
+                    )}
+                    {clause.isFixAccepted && (
+                       <div className="ml-4 p-3 my-2 border border-green-500 bg-green-100/70 rounded">
+                        <p className="font-semibold text-green-700 mb-1">Accepted Fix:</p>
+                        <p className="italic text-green-800/90 text-base">"{clause.currentClauseText}"</p>
+                      </div>
+                    )}
+
                      <h5 className="font-semibold text-on-accent text-md mt-3 mb-1.5 flex items-center">
-                      <AlertTriangle size={20} className="mr-1.5 text-accent" /> Reason for Flag:
+                      <AlertTriangle size={20} className="mr-1.5 text-accent" /> 
+                      {clause.isFixProposed || clause.isFixAccepted ? "Justification / Original Reason:" : "Reason for Flag:"}
                     </h5>
-                    <p className="text-sm text-foreground/75 ml-4 mb-2.5">{clause.reason}</p>
+                    <p className={cn("text-sm text-foreground/75 ml-4 mb-2.5", clause.isFixProposed && !clause.isFixAccepted && "line-through opacity-70")}>
+                      {clause.originalReason}
+                    </p>
+                    {(clause.isFixProposed || clause.isFixAccepted) && clause.currentReason !== clause.originalReason && (
+                       <p className="text-sm text-foreground/90 ml-4 mb-2.5 bg-background/50 p-2 rounded border border-border">
+                         <span className="font-semibold">Justification: </span>{clause.currentReason}
+                       </p>
+                    )}
+
                     {clause.riskTags && clause.riskTags.length > 0 && (
                       <>
                         <h5 className="font-semibold text-on-accent text-md mt-3 mb-2 flex items-center">
@@ -275,6 +317,31 @@ export function AnalysisDisplay({
                         </div>
                       </>
                     )}
+                    <div className="mt-4 ml-4 flex flex-wrap gap-2">
+                      {!clause.isFixProposed && !clause.isFixAccepted && (
+                        <Button size="sm" variant="outline" onClick={() => onApplyAutoFix(clause.id, 'flaggedClause')} disabled={clause.fixLoading} className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 border-yellow-500">
+                          {clause.fixLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Sparkles className="h-4 w-4 mr-1.5" />} Apply Auto-Fix
+                        </Button>
+                      )}
+                      {clause.isFixProposed && !clause.isFixAccepted && (
+                        <>
+                          <Button size="sm" variant="default" onClick={() => onAcceptFix(clause.id, 'flaggedClause')} className="bg-green-500 hover:bg-green-600 text-white">
+                            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Accept Fix
+                          </Button>
+                          <Button size="sm" variant="outline" disabled className="cursor-not-allowed">
+                            <Edit3 className="h-4 w-4 mr-1.5" /> Edit Further
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => onRevertFix(clause.id, 'flaggedClause')}>
+                            <RotateCcw className="h-4 w-4 mr-1.5" /> Revert
+                          </Button>
+                        </>
+                      )}
+                      {clause.isFixAccepted && (
+                         <Button size="sm" variant="ghost" onClick={() => onRevertFix(clause.id, 'flaggedClause')}>
+                            <RotateCcw className="h-4 w-4 mr-1.5" /> Revert Accepted Fix
+                          </Button>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -285,7 +352,7 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
 
-          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0)) && <Separator className="my-8" />}
+          {(summary || (flaggedClauses && flaggedClauses.length > 0)) && <Separator className="my-8" />}
 
           {suggestions?.suggestions && suggestions.suggestions.length > 0 ? (
             <SectionCard title="III. Improvement Suggestions" icon={<Lightbulb size={28} />} accentHighlight>
@@ -301,36 +368,75 @@ export function AnalysisDisplay({
             </SectionCard>
           )}
 
-          {((summary) || (flaggedClauses?.criticalClauses && flaggedClauses.criticalClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-8" />}
+          {((summary) || (flaggedClauses && flaggedClauses.length > 0) || (suggestions?.suggestions && suggestions.suggestions.length > 0)) && <Separator className="my-8" />}
           
-          {missingPoints && (missingPoints.missingPoints.length > 0 || missingPoints.recommendations.length > 0 || missingPoints.summary) ? (
+          {missingPoints && missingPoints.length > 0 ? (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
-              {missingPoints.missingPoints.length > 0 ? (
-                <div className="mb-5">
-                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Missing Information Identified:</h4>
-                  <ul className="space-y-3 list-disc list-outside ml-5 marker:text-accent">
-                    {missingPoints.missingPoints.map((point, index) => (
-                      <li key={`missing-${index}`} className="text-foreground/90 leading-relaxed">{point}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : <p className="text-muted-foreground text-sm italic">No specific missing information was identified.</p>}
-              {missingPoints.recommendations.length > 0 ? (
-                <div className="mb-5">
-                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Recommendations:</h4>
-                  <ul className="space-y-3 list-disc list-outside ml-5 marker:text-accent">
-                    {missingPoints.recommendations.map((rec, index) => (
-                      <li key={`rec-${index}`} className="text-foreground/90 leading-relaxed">{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              ): <p className="text-muted-foreground text-sm italic">No specific recommendations regarding missing points.</p>}
-               {missingPoints.summary ? (
-                 <div className="mt-5 pt-4 border-t border-accent/20">
-                  <h4 className="font-semibold text-on-accent text-lg mb-2.5">Summary of Missing Points:</h4>
-                  <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{missingPoints.summary}</p>
-                </div>
-              ): <p className="text-muted-foreground text-sm italic mt-4">No summary for missing points was generated.</p>}
+              <ul className="space-y-5">
+                {missingPoints.map((item) => (
+                  <li key={item.id} className={cn("p-4 border rounded-lg shadow-md",
+                     item.type === 'summary' ? "bg-muted/20 border-border" : 
+                     item.isFixAccepted ? "border-green-400 bg-green-50/30" : "border-accent/40 bg-accent/10"
+                  )}>
+                    {item.type === 'missing' && (
+                      <h4 className="font-semibold text-on-accent text-lg mb-1.5">Missing Information Identified:</h4>
+                    )}
+                    {item.type === 'recommendation' && (
+                      <h4 className="font-semibold text-on-accent text-lg mb-1.5">Recommendation:</h4>
+                    )}
+                    {item.type === 'summary' && (
+                      <h4 className="font-semibold text-foreground text-lg mb-1.5">Summary of Missing Points:</h4>
+                    )}
+                    
+                    <p className={cn("text-foreground/90 leading-relaxed whitespace-pre-wrap", item.isFixProposed && !item.isFixAccepted && item.isFixable && "line-through opacity-70")}>
+                      {item.isFixable ? item.text : item.currentText} {/* Original text for non-fixable or non-fixed fixable */}
+                    </p>
+
+                    {item.isFixable && item.isFixProposed && !item.isFixAccepted && (
+                      <div className="ml-0 mt-2 p-3 my-2 border border-yellow-400 bg-yellow-50/50 rounded">
+                        <p className="font-semibold text-yellow-700 mb-1">Suggested New Clause:</p>
+                        <p className="italic text-yellow-800/90 text-base whitespace-pre-wrap">"{item.currentText}"</p>
+                        {item.justificationNote && <p className="text-xs text-yellow-700 mt-1">Justification: {item.justificationNote}</p>}
+                      </div>
+                    )}
+                    {item.isFixable && item.isFixAccepted && (
+                       <div className="ml-0 mt-2 p-3 my-2 border border-green-500 bg-green-100/70 rounded">
+                        <p className="font-semibold text-green-700 mb-1">Accepted New Clause:</p>
+                        <p className="italic text-green-800/90 text-base whitespace-pre-wrap">"{item.currentText}"</p>
+                        {item.justificationNote && <p className="text-xs text-green-700 mt-1">Justification: {item.justificationNote}</p>}
+                      </div>
+                    )}
+
+                    {item.isFixable && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {!item.isFixProposed && !item.isFixAccepted && (
+                          <Button size="sm" variant="outline" onClick={() => onApplyAutoFix(item.id, 'missingPoint')} disabled={item.fixLoading} className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 border-yellow-500">
+                            {item.fixLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Sparkles className="h-4 w-4 mr-1.5" />} Suggest Clause
+                          </Button>
+                        )}
+                        {item.isFixProposed && !item.isFixAccepted && (
+                          <>
+                            <Button size="sm" variant="default" onClick={() => onAcceptFix(item.id, 'missingPoint')} className="bg-green-500 hover:bg-green-600 text-white">
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Accept Clause
+                            </Button>
+                            <Button size="sm" variant="outline" disabled className="cursor-not-allowed">
+                              <Edit3 className="h-4 w-4 mr-1.5" /> Edit Further
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => onRevertFix(item.id, 'missingPoint')}>
+                              <RotateCcw className="h-4 w-4 mr-1.5" /> Revert
+                            </Button>
+                          </>
+                        )}
+                        {item.isFixAccepted && (
+                          <Button size="sm" variant="ghost" onClick={() => onRevertFix(item.id, 'missingPoint')}>
+                              <RotateCcw className="h-4 w-4 mr-1.5" /> Revert Accepted Clause
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </SectionCard>
           ) : (
             <SectionCard title="IV. Missing Points Analysis" icon={<HelpCircle size={28} />} accentHighlight>
