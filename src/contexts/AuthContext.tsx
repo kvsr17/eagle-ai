@@ -9,6 +9,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  GoogleAuthProvider, // Added
+  signInWithPopup, // Added
   type User as FirebaseUser
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
@@ -20,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithEmailAndPassword: (email: string, pass: string) => Promise<boolean>;
   signupWithEmailAndPassword: (email: string, pass: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<boolean>; // Added
   logout: () => Promise<void>;
 }
 
@@ -30,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
-  // Initialize auth only once
   const auth = getAuth(app);
 
 
@@ -66,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       toast({ title: 'Signup Successful', description: 'Welcome to LegalForesight AI!' });
-      router.push('/'); // Redirect to home page after successful signup
+      router.push('/'); 
       return true;
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -79,6 +81,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
   };
+
+  const googleSignIn = async (): Promise<boolean> => {
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      toast({ title: 'Google Sign-In Successful', description: 'Welcome!' });
+      router.push('/');
+      return true;
+    } catch (error: any) {
+      console.error("Google Sign-In error:", error);
+      toast({
+        title: 'Google Sign-In Failed',
+        description: error.message || 'Could not sign in with Google. Please try again.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return false;
+    }
+  };
+
 
   const logoutUser = async () => {
     setLoading(true);
@@ -95,8 +118,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     } finally {
-      // Ensure loading is set to false even if logout fails, 
-      // though usually a redirect will occur first or state will clear.
       setLoading(false);
     }
   };
@@ -106,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     loginWithEmailAndPassword: login,
     signupWithEmailAndPassword: signup,
+    signInWithGoogle: googleSignIn, // Added
     logout: logoutUser,
   };
 
