@@ -21,7 +21,7 @@ const signupSchema = z.object({
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
-  path: ["confirmPassword"], // path to show error under
+  path: ["confirmPassword"],
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
@@ -49,18 +49,27 @@ export default function SignupPage() {
     await signupWithEmailAndPassword(data.email, data.password);
   };
 
-  if (currentUser) {
+  if (authLoading && currentUser) { // More specific condition for redirect loading
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen py-12">
+      <div className="flex flex-col items-center justify-center min-h-screen py-12 bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <p className="text-muted-foreground">Redirecting...</p>
       </div>
     );
   }
+  
+  if (currentUser && !authLoading) {
+     return (
+      <div className="flex flex-col items-center justify-center min-h-screen py-12 bg-background">
+        <p className="text-muted-foreground">Already logged in. Redirecting...</p>
+      </div>
+    );
+  }
+
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4 py-12">
-      <Card className="w-full max-w-sm shadow-xl rounded-xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-12">
+      <Card className="w-full max-w-sm shadow-xl rounded-xl border border-border">
         <CardContent className="p-6 sm:p-8 space-y-6">
           <div className="text-center space-y-3">
             <ScanEye className="mx-auto h-12 w-12 text-primary" />
@@ -77,7 +86,7 @@ export default function SignupPage() {
                      <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="email" placeholder="Email" {...field} className="pl-10 h-12 text-base" />
+                          <Input type="email" placeholder="Email" {...field} className="pl-10 h-12 text-base shadow-sm" />
                         </FormControl>
                       </div>
                     <FormMessage />
@@ -92,7 +101,7 @@ export default function SignupPage() {
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="password" placeholder="Password" {...field} className="pl-10 h-12 text-base" />
+                          <Input type="password" placeholder="Password" {...field} className="pl-10 h-12 text-base shadow-sm" />
                         </FormControl>
                       </div>
                     <FormMessage />
@@ -107,15 +116,15 @@ export default function SignupPage() {
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="password" placeholder="Confirm Password" {...field} className="pl-10 h-12 text-base" />
+                          <Input type="password" placeholder="Confirm Password" {...field} className="pl-10 h-12 text-base shadow-sm" />
                         </FormControl>
                       </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full h-12 text-lg" disabled={authLoading}>
-                {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign Up"}
+              <Button type="submit" className="w-full h-12 text-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-md" disabled={authLoading}>
+                {authLoading && !currentUser ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign Up"}
               </Button>
             </form>
           </Form>

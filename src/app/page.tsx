@@ -2,7 +2,9 @@
 "use client";
 
 import type { ChangeEvent } from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingIndicator } from '@/components/LoadingIndicator';
 import { AnalysisDisplay } from '@/components/AnalysisDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Wand2, FileDown } from 'lucide-react'; // Added FileDown
+import { FileUp, AlertCircle, Printer, ScanEye, Zap, Loader2, Wand2 } from 'lucide-react';
 import { ChatInterface } from '@/components/ChatInterface';
 
 import { summarizeLegalDocument, type SummarizeLegalDocumentOutput, type SummarizeLegalDocumentInput } from '@/ai/flows/summarize-legal-document';
@@ -50,6 +52,9 @@ export interface UIMissingPoint {
 
 
 export default function HomePage() {
+  const { currentUser, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -67,6 +72,12 @@ export default function HomePage() {
   const [suggestions, setSuggestions] = useState<SuggestImprovementsOutput | null>(null);
   const [legalForesight, setLegalForesight] = useState<PredictLegalOutcomesOutput | null>(null);
 
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, authLoading, router]);
+
   const resetAnalysisStates = useCallback(() => {
     setSummary(null);
     setUiFlaggedClauses([]);
@@ -83,7 +94,7 @@ export default function HomePage() {
       resetAnalysisStates();
       setDocumentText(null);
       setImageDataUri(null);
-      setError(null); // Clear previous errors
+      setError(null);
 
       if (file.type === "text/plain") {
         const reader = new FileReader();
@@ -109,7 +120,7 @@ export default function HomePage() {
           variant: "destructive",
         });
         setFileName(null);
-        event.target.value = ""; 
+        event.target.value = "";
       }
     } else {
         setFileName(null);
@@ -127,7 +138,7 @@ export default function HomePage() {
     setIsLoading(true);
     resetAnalysisStates();
 
-    const effectiveContext = documentContext.trim() || (fileName ? `The document is named '${fileName}'. Please infer context.` : "General legal document review");
+    const effectiveContext = documentContext.trim() || (fileName ? `Context related to document: ${fileName}. Please infer additional context from the document type and content.` : "General legal document review. User has not specified a context.");
 
 
     const basePayload: { documentText?: string | null; photoDataUri?: string | null; context: string } = { context: effectiveContext };
@@ -143,7 +154,7 @@ export default function HomePage() {
         summarizeLegalDocument(basePayload as SummarizeLegalDocumentInput),
         flagCriticalClauses(basePayload as FlagCriticalClausesInput),
         suggestImprovements(basePayload as SuggestImprovementsInput),
-        identifyMissingPoints({ ...basePayload, documentType: effectiveContext } as IdentifyMissingPointsInput), // Pass context as documentType for this flow
+        identifyMissingPoints({ ...basePayload, documentType: effectiveContext } as IdentifyMissingPointsInput),
         predictLegalOutcomes(basePayload as PredictLegalOutcomesInput),
       ]);
 
@@ -233,9 +244,9 @@ export default function HomePage() {
         errorMessages += `Legal foresight analysis failed: ${foresightRes.reason?.message || String(foresightRes.reason)}\n`;
         anyErrors = true;
       }
-      
+
       if (errorMessages.trim()) {
-        setError(errorMessages.trim());
+        setError(errorMessages.trim().replace(/\\n/g, '\n'));
       }
 
       const allFailed = results.every(res => res.status === 'rejected');
@@ -243,7 +254,7 @@ export default function HomePage() {
       if (allFailed) {
         toast({ title: "Analysis Failed", description: "All AI analyses failed. Please check error details.", variant: "destructive", duration: 8000 });
       } else if (anyErrors) {
-         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Review the report for details and errors.", variant: "default", duration: 7000 });
+         toast({ title: "Partial Analysis Success", description: "Some analyses could not be completed. Review the report for details and error messages.", variant: "default", duration: 7000 });
       } else {
         toast({ title: "Analysis Complete", description: "Document review and foresight finished successfully." });
       }
@@ -273,12 +284,12 @@ export default function HomePage() {
         documentContext: currentEffectiveContext,
         fixType: "rewrite",
       };
-    } else { 
-      setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, fixLoading: true, isFixProposed: false } : mp));
+    } else {
+      setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? { ...mp, fixLoading: true, isFixProposed: false } : fc));
       itemToFix = uiMissingPoints.find(mp => mp.id === itemId);
       if (!itemToFix || !itemToFix.isFixable) return;
       autoFixInput = {
-        problemDescription: itemToFix.text, 
+        problemDescription: itemToFix.text,
         documentContext: currentEffectiveContext,
         fixType: "generate",
       };
@@ -295,10 +306,10 @@ export default function HomePage() {
           isFixAccepted: false,
           fixLoading: false,
         } : fc));
-      } else { 
+      } else {
         setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
           ...mp,
-          currentText: result.fixedClauseText, 
+          currentText: result.fixedClauseText,
           justificationNote: result.justificationNote,
           isFixProposed: true,
           isFixAccepted: false,
@@ -336,10 +347,10 @@ export default function HomePage() {
         isFixAccepted: false,
         fixLoading: false,
       } : fc));
-    } else { 
+    } else {
       setUiMissingPoints(prev => prev.map(mp => mp.id === itemId ? {
         ...mp,
-        currentText: mp.text, 
+        currentText: mp.text,
         justificationNote: undefined,
         isFixProposed: false,
         isFixAccepted: false,
@@ -382,18 +393,19 @@ export default function HomePage() {
         toast({ title: "No New Fixes Needed", description: "All items seem to be addressed or no auto-fixable items found." });
         setIsBatchFixing(false);
         setBatchFixProgress(null);
-        setTimeout(() => { handlePrint(); }, 100); 
+        setTimeout(() => { handlePrint(); }, 100);
         return;
     }
 
+    // Sequential processing for flagged clauses
     for (let i = 0; i < clausesToFix.length; i++) {
       const clause = clausesToFix[i];
       setBatchFixProgress(`Fixing flagged clause ${i + 1} of ${clausesToFix.length}...`);
-      
-      tempFlaggedClauses = tempFlaggedClauses.map(fc => 
+
+      tempFlaggedClauses = tempFlaggedClauses.map(fc =>
         fc.id === clause.id ? { ...fc, fixLoading: true } : fc
       );
-      setUiFlaggedClauses(tempFlaggedClauses); 
+      setUiFlaggedClauses([...tempFlaggedClauses]); // Update state to re-render
 
       try {
         const result = await autoFixClause({
@@ -406,8 +418,8 @@ export default function HomePage() {
           ...fc,
           currentClauseText: result.fixedClauseText,
           currentReason: result.justificationNote || "AI proposed fix applied.",
-          isFixProposed: true, 
-          isFixAccepted: false,
+          isFixProposed: true,
+          isFixAccepted: false, // Mark as proposed, not accepted
           fixLoading: false,
         } : fc);
         itemsFixedSuccessfully++;
@@ -416,40 +428,43 @@ export default function HomePage() {
         tempFlaggedClauses = tempFlaggedClauses.map(fc => fc.id === clause.id ? { ...fc, fixLoading: false, currentReason: `${fc.currentReason} (Auto-fix failed: ${e.message})` } : fc);
         itemsFailedToFix++;
       }
-      setUiFlaggedClauses(tempFlaggedClauses); 
+      setUiFlaggedClauses([...tempFlaggedClauses]); // Update state
     }
 
+    // Sequential processing for missing points
     for (let i = 0; i < pointsToFix.length; i++) {
       const point = pointsToFix[i];
       setBatchFixProgress(`Fixing missing point ${i + 1} of ${pointsToFix.length}... (Overall ${clausesToFix.length + i + 1}/${totalItemsToFix})`);
-      
-      tempMissingPoints = tempMissingPoints.map(mp => 
+
+      tempMissingPoints = tempMissingPoints.map(mp =>
         mp.id === point.id ? { ...mp, fixLoading: true } : mp
       );
-      setUiMissingPoints(tempMissingPoints); 
+      setUiMissingPoints([...tempMissingPoints]); // Update state
 
       try {
         const result = await autoFixClause({
-          problemDescription: point.text, 
+          problemDescription: point.text,
           documentContext: currentEffectiveContext,
           fixType: "generate",
         });
         tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? {
           ...mp,
-          currentText: result.fixedClauseText, 
+          currentText: result.fixedClauseText,
           justificationNote: result.justificationNote,
-          isFixProposed: true, 
-          isFixAccepted: false,
+          isFixProposed: true,
+          isFixAccepted: false, // Mark as proposed, not accepted
           fixLoading: false,
         } : mp);
         itemsFixedSuccessfully++;
-      } catch (e: any) {
+      } catch (e: any)
+      {
         console.error(`Error auto-fixing missing point ${point.id}:`, e);
         tempMissingPoints = tempMissingPoints.map(mp => mp.id === point.id ? { ...mp, fixLoading: false, justificationNote: `Auto-fix failed: ${e.message}` } : mp);
         itemsFailedToFix++;
       }
-      setUiMissingPoints(tempMissingPoints);
+      setUiMissingPoints([...tempMissingPoints]); // Update state
     }
+
 
     setBatchFixProgress("Auto-fix process completed. Preparing report...");
 
@@ -457,7 +472,7 @@ export default function HomePage() {
         toast({ title: "Some Fixes Failed", description: `${itemsFailedToFix} item(s) could not be auto-corrected. ${itemsFixedSuccessfully} fixed. Please review the report.`, variant: "destructive", duration: 10000 });
     } else if (itemsFixedSuccessfully > 0) {
         toast({ title: "Batch Auto-Fix Applied", description: `Report updated with ${itemsFixedSuccessfully} AI suggestions. Preparing download.` });
-    } else { 
+    } else {
         toast({ title: "No New Fixes Applied", description: "No new items were updated during the batch process." });
     }
 
@@ -466,26 +481,43 @@ export default function HomePage() {
 
     setTimeout(() => {
       handlePrint();
-    }, 700); 
+    }, 700);
   };
 
   const getButtonText = () => {
     if (isLoading) return "Analyzing Document...";
     if (!fileName) return "Upload Document to Begin";
-    return `Analyze ${fileName.length > 20 ? fileName.substring(0, 17) + "..." : fileName}`;
+    return `Analyze ${fileName.length > 30 ? fileName.substring(0, 27) + "..." : fileName}`;
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--navbar-height,4rem))]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading application...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser && !authLoading) {
+    return (
+       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--navbar-height,4rem))]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
-      <div className="no-print max-w-md mx-auto w-full">
+      <div className="no-print max-w-2xl mx-auto w-full">
         <Card className="shadow-xl rounded-xl border-primary/20">
           <CardHeader className="pt-6 pb-4 text-center">
-            <ScanEye size={48} className="text-primary mx-auto mb-3" />
+            <ScanEye size={52} className="text-primary mx-auto mb-3.5" />
             <CardTitle className="text-2xl font-semibold text-primary">LegalForesight AI</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-8">
-            <h2 className="text-3xl font-bold text-center text-foreground">Upload Document</h2>
+            <h2 className="text-3xl font-bold text-center text-foreground mb-1">Upload Document</h2>
             <div className="space-y-5">
               <div>
                 <Input
@@ -500,19 +532,19 @@ export default function HomePage() {
                   htmlFor="file-upload"
                   className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-input rounded-lg text-center hover:border-primary/50 transition-colors cursor-pointer bg-card hover:bg-primary/5"
                 >
-                  <div className="p-3 bg-primary/10 rounded-lg mb-3">
-                    <FileUp size={40} className="text-primary" />
+                  <div className="p-3.5 bg-primary/10 rounded-lg mb-3.5 shadow-sm">
+                    <FileUp size={44} className="text-primary" />
                   </div>
-                  <p className="text-md font-semibold text-foreground">Upload Document</p>
-                  <p className="text-xs text-muted-foreground">or drop a file here</p>
+                  <p className="text-md font-semibold text-foreground">Click to Upload Document</p>
+                  <p className="text-sm text-muted-foreground mt-1">or drop a file here</p>
                 </label>
                 {fileName && (
-                  <p className="text-sm text-green-600 font-medium mt-3 text-center">Selected: {fileName}</p>
+                  <p className="text-sm text-green-600 font-medium mt-3.5 text-center">Selected: {fileName}</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="document-context" className="text-sm font-medium text-foreground mb-1.5 block">
+                <Label htmlFor="document-context" className="text-md font-medium text-foreground mb-2 block">
                   Document Context (Crucial for Best Results)
                 </Label>
                 <Textarea
@@ -520,27 +552,27 @@ export default function HomePage() {
                   placeholder="E.g., 'Employment contract for a software engineer, reviewing for employee', 'NDA for a startup partnership, mutual agreement', 'Lease agreement for commercial property, reviewing for tenant'. This helps improve analysis accuracy significantly."
                   value={documentContext}
                   onChange={(e) => setDocumentContext(e.target.value)}
-                  className="min-h-[70px] text-sm shadow-sm focus:ring-primary/30 focus:border-primary/30"
+                  className="min-h-[80px] text-base shadow-sm focus:ring-primary/30 focus:border-primary/30 p-3"
                   disabled={isLoading || isBatchFixing}
                 />
-                <p className="text-xs text-muted-foreground mt-1.5">Providing specific context (like document type and your role/perspective) greatly enhances the AI's analysis.</p>
+                <p className="text-xs text-muted-foreground mt-2">Providing specific context (like document type and your role/perspective) greatly enhances the AI's analysis.</p>
               </div>
             </div>
 
             <Button
               onClick={processDocument}
               disabled={(!documentText && !imageDataUri && !fileName) || isLoading || isBatchFixing}
-              className="w-full text-lg py-3 h-12"
+              className="w-full text-lg py-3 h-14 mt-2 shadow-md"
               size="lg"
             >
                {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2.5 h-6 w-6 animate-spin" />
                   {getButtonText()}
                 </>
               ) : (
                 <>
-                  <Zap className="mr-2 h-5 w-5" />
+                  <Zap className="mr-2.5 h-6 w-6" />
                   {getButtonText()}
                 </>
               )}
@@ -549,7 +581,7 @@ export default function HomePage() {
         </Card>
       </div>
 
-      <div className="no-print mt-8">
+      <div className="no-print mt-10">
         {isLoading && <LoadingIndicator text="Generating insights & predictions..." />}
         {isBatchFixing && (
           <LoadingIndicator text={batchFixProgress || "Applying auto-fixes and preparing report..."} />
@@ -558,43 +590,43 @@ export default function HomePage() {
 
 
       {error && !isLoading && !isBatchFixing && (
-        <div className="no-print mt-8 max-w-2xl mx-auto"> 
-          <Alert variant="destructive" className="shadow-md">
+        <div className="no-print mt-10 max-w-3xl mx-auto">
+          <Alert variant="destructive" className="shadow-md p-5">
             <AlertCircle className="h-6 w-6" />
-            <AlertTitle className="text-lg font-semibold">Error During Analysis</AlertTitle> 
-            <AlertDescription className="whitespace-pre-wrap text-base mt-2">{error}</AlertDescription> 
+            <AlertTitle className="text-lg font-semibold">Error During Analysis</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap text-base mt-2">{error}</AlertDescription>
           </Alert>
         </div>
       )}
 
-      <div id="report-content" className="printable-area mt-10">
+      <div id="report-content" className="printable-area mt-12">
         {!isLoading && !isBatchFixing && hasResults && (
-           <div className="text-center mb-6 no-print space-y-3 md:space-y-0 md:flex md:items-center md:justify-center md:space-x-3">
+           <div className="text-center mb-8 no-print space-y-4 md:space-y-0 md:flex md:items-center md:justify-center md:space-x-4">
              <Button
                 onClick={handlePrint}
                 variant="outline"
-                className="w-full md:w-auto shadow-sm hover:shadow-md transition-all"
+                className="w-full md:w-auto shadow-md hover:shadow-lg transition-all border-primary/70 text-primary hover:bg-primary/10"
                 size="lg"
-                disabled={isLoading || isBatchFixing} 
+                disabled={isLoading || isBatchFixing}
               >
-                <Printer className="mr-2 h-5 w-5" />
+                <Printer className="mr-2.5 h-5 w-5" />
                 Download Full Report
               </Button>
               <Button
                 onClick={handleBatchAutoFixAndDownload}
                 variant="default"
-                className="w-full md:w-auto shadow-sm hover:shadow-md transition-all" 
+                className="w-full md:w-auto shadow-md hover:shadow-lg transition-all bg-accent text-accent-foreground hover:bg-accent/90"
                 size="lg"
                 disabled={isLoading || isBatchFixing || !hasResults}
               >
                 {isBatchFixing ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className="mr-2.5 h-5 w-5 animate-spin" />
                     {batchFixProgress ? batchFixProgress.substring(0,25)+(batchFixProgress.length > 25 ? '...' : '') : "Fixing & Preparing..."}
                   </>
                 ) : (
                   <>
-                    <Wand2 className="mr-2 h-5 w-5" />
+                    <Wand2 className="mr-2.5 h-5 w-5" />
                     Download Fixed Report
                   </>
                 )}
@@ -619,7 +651,7 @@ export default function HomePage() {
       </div>
 
       {!isLoading && !isBatchFixing && hasResults && (documentText || imageDataUri) && fileName && (
-        <div className="mt-10 no-print">
+        <div className="mt-12 no-print">
           <ChatInterface
             documentText={documentText}
             imageDataUri={imageDataUri}
@@ -629,9 +661,9 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="no-print text-center text-muted-foreground mt-16 py-6 text-xs border-t border-border">
+      <footer className="no-print text-center text-muted-foreground mt-20 py-8 text-sm border-t border-border">
         <p>&copy; {new Date().getFullYear()} LegalForesight AI. Predictive analysis for informational purposes only. Not legal advice.</p>
-        <p>Please consult with a qualified legal professional for any legal matters.</p>
+        <p className="mt-1.5">Please consult with a qualified legal professional for any legal matters.</p>
       </footer>
     </div>
   );

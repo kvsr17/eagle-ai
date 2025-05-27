@@ -30,7 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  // Initialize auth only once
   const auth = getAuth(app);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -93,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     } finally {
+      // Ensure loading is set to false even if logout fails, 
+      // though usually a redirect will occur first or state will clear.
       setLoading(false);
     }
   };
