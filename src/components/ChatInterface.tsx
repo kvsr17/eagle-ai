@@ -15,9 +15,10 @@ interface ChatInterfaceProps {
   documentText: string | null;
   imageDataUri: string | null;
   fileName: string | null;
+  documentContext: string; // Added to pass context to the chat flow
 }
 
-export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInterfaceProps) {
+export function ChatInterface({ documentText, imageDataUri, fileName, documentContext }: ChatInterfaceProps) {
   const [userQuestion, setUserQuestion] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,16 +37,19 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
 
     setIsLoading(true);
     setError(null);
-    setAiResponse(null); // Clear previous response
+    setAiResponse(null); 
 
-    const payload: ChatWithDocumentInput = { userQuestion };
+    const payload: ChatWithDocumentInput = { 
+        userQuestion,
+        context: documentContext // Pass document context to chat flow
+    };
     if (documentText) payload.documentText = documentText;
     if (imageDataUri) payload.photoDataUri = imageDataUri;
 
     try {
       const result = await chatWithDocument(payload);
       setAiResponse(result.aiResponse);
-      setUserQuestion(""); // Clear input after successful question
+      setUserQuestion(""); 
     } catch (e: any) {
       console.error("Error in chat:", e);
       const errorMessage = e.message || "An error occurred while getting the AI's response.";
@@ -57,14 +61,14 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
   };
 
   return (
-    <Card className="mt-10 shadow-xl border-2 border-primary/30 rounded-xl overflow-hidden"> {/* Consistent styling with AnalysisDisplay */}
-      <CardHeader className="border-b-2 border-primary/40 bg-primary-light py-5 px-7"> {/* Enhanced header consistent with AnalysisDisplay */}
-        <CardTitle className="flex items-center gap-3 text-2xl text-primary font-semibold"> {/* Increased font size */}
-          <MessageSquare size={28} /> {/* Slightly larger icon */}
+    <Card className="mt-10 shadow-xl border-2 border-primary/30 rounded-xl overflow-hidden"> 
+      <CardHeader className="border-b-2 border-primary/40 bg-primary-light py-5 px-7"> 
+        <CardTitle className="flex items-center gap-3 text-2xl text-primary font-semibold"> 
+          <MessageSquare size={28} /> 
           Chat with: <span className="font-bold">{fileName || "Your Document"}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-7 space-y-6"> {/* Increased padding and spacing */}
+      <CardContent className="pt-7 space-y-6"> 
         <div>
           <Textarea
             placeholder="Ask a question about the document... e.g., 'What are the termination conditions?' or 'Explain clause 5.'"
@@ -78,13 +82,13 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
             }}
             rows={3}
             disabled={isLoading}
-            className="text-base shadow-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 p-3" /* Added p-3 and increased text size */
+            className="text-base shadow-sm focus:ring-2 focus:ring-primary/50 focus:border-primary/50 p-3" 
           />
         </div>
         <Button 
             onClick={handleAskQuestion} 
             disabled={isLoading || (!documentText && !imageDataUri) || !userQuestion.trim()} 
-            className="w-full sm:w-auto text-lg py-3 px-6 h-12" /* Adjusted padding and size */
+            className="w-full sm:w-auto text-lg py-3 px-6 h-12" 
             size="lg"
         >
           {isLoading ? (
@@ -101,16 +105,16 @@ export function ChatInterface({ documentText, imageDataUri, fileName }: ChatInte
         </Button>
 
         {error && (
-          <Alert variant="destructive" className="mt-5 shadow-md p-5"> {/* Increased padding */}
-            <AlertCircle className="h-6 w-6" /> {/* Increased icon size */}
-            <AlertTitle className="text-lg font-semibold">Chat Error</AlertTitle> {/* Bolder title */}
-            <AlertDescription className="text-base mt-1.5">{error}</AlertDescription> {/* Added margin */}
+          <Alert variant="destructive" className="mt-5 shadow-md p-5"> 
+            <AlertCircle className="h-6 w-6" /> 
+            <AlertTitle className="text-lg font-semibold">Chat Error</AlertTitle> 
+            <AlertDescription className="text-base mt-1.5">{error}</AlertDescription> 
           </Alert>
         )}
 
         {aiResponse && !error && (
-          <div className="mt-6 p-6 border border-green-400 bg-green-50/80 rounded-lg shadow-lg"> {/* Enhanced styling for AI response */}
-            <h4 className="font-semibold text-xl text-green-800 mb-3">AI's Answer:</h4> {/* Increased size and margin */}
+          <div className="mt-6 p-6 border border-green-400 bg-green-50/80 rounded-lg shadow-lg"> 
+            <h4 className="font-semibold text-xl text-green-800 mb-3">AI's Answer:</h4> 
             <p className="whitespace-pre-wrap text-base text-gray-800 leading-relaxed">{aiResponse}</p>
           </div>
         )}

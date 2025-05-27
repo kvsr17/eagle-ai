@@ -16,12 +16,13 @@ const ChatWithDocumentInputSchema = z.object({
   documentText: z.string().optional().describe('The text content of the legal document.'),
   photoDataUri: z.string().optional().describe("A photo or scan of the document, as a data URI. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   userQuestion: z.string().describe('The question asked by the user about the document.'),
+  context: z.string().optional().describe('User-provided context about the document (e.g., "Employment Agreement", "NDA for startup"). This helps tailor the answer.'),
   // We'll add chatHistory here in Phase 2
 });
 export type ChatWithDocumentInput = z.infer<typeof ChatWithDocumentInputSchema>;
 
 const ChatWithDocumentOutputSchema = z.object({
-  aiResponse: z.string().describe("The AI's answer to the user's question."),
+  aiResponse: z.string().describe("The AI's answer to the user's question, based *only* on the document and its context. If the answer cannot be found, it should state so clearly."),
 });
 export type ChatWithDocumentOutput = z.infer<typeof ChatWithDocumentOutputSchema>;
 
@@ -39,7 +40,9 @@ const chatWithDocumentPrompt = ai.definePrompt({
   name: 'chatWithDocumentPrompt',
   input: {schema: ChatWithDocumentInputSchema},
   output: {schema: ChatWithDocumentOutputSchema},
-  prompt: `You are a helpful AI legal assistant. Analyze the following legal document and answer the user's question based *only* on the information contained within this document.
+  prompt: `You are a helpful AI legal assistant. Your task is to analyze the following legal document and answer the user's question based *only* on the information contained within this document and its provided context.
+
+Document Context: {{#if context}}{{context}}{{else}}General legal document.{{/if}}
 
 Document Content:
 {{#if documentText}}
@@ -52,6 +55,7 @@ Document Content:
 User's Question: {{{userQuestion}}}
 
 Your Answer:
+Provide a concise but thorough answer. If the information to answer the question is not found within the document, clearly state that the document does not provide an answer to this specific question. Do not infer or provide external information.
 `,
 });
 
@@ -66,4 +70,3 @@ const chatWithDocumentFlow = ai.defineFlow(
     return output!;
   }
 );
-

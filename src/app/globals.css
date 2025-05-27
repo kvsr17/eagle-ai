@@ -215,7 +215,8 @@ body {
   }
   
   /* Styles for sub-cards or bordered list items within the main card */
-  .printable-area .card .p-4.border { /* Targets list items like critical clauses */
+  .printable-area .card .p-4.border, /* Targets list items like critical clauses and summary items */
+  .printable-area .card .p-5.border { /* Targets items like flagged clauses, predicted outcomes */
       border: 1px solid #ddd !important;
       background-color: #fdfdfd !important;
       box-shadow: none !important;
@@ -237,8 +238,21 @@ body {
      border-bottom-width: 1px !important; /* Make it thinner for print */
      border-color: #ddd !important;
   }
-  .printable-area .card-header.bg-primary\/10, /* Tailwind /10 opacity */
-  .printable-area .card-header.bg-primary-light { /* Custom primary light */
+
+  /* Handle Tailwind JIT classes for background opacity */
+  .printable-area .card-header.bg-primary\/10, /* from CardHeader bg-primary/10 */
+  .printable-area .card-header.bg-primary-light, /* from CardHeader bg-primary-light */
+  .printable-area .bg-primary\/5, /* From LegalForesight SectionCard */
+  .printable-area .bg-accent\/10, /* from flaggedClauses */
+  .printable-area .bg-accent-light,
+  .printable-area .bg-muted\/30, /* From missing points summary */
+  .printable-area .bg-muted\/40, /* From summary overall */
+  .printable-area .bg-card\/70,  /* From flagged clause justification */
+  .printable-area .bg-yellow-100\/80, /* From suggested fix for flagged clause / missing point */
+  .printable-area .bg-green-100\/90, /* From accepted fix for flagged clause / missing point */
+  .printable-area .bg-green-50\/50, /* From accepted fix for flagged clause / missing point */
+  .printable-area .bg-green-50\/80, /* From chat AI response */
+  .printable-area .bg-primary\/10 { /* From file upload icon background */
       background-color: #f0f0f0 !important; /* Light gray for print */
       color: black !important;
   }
@@ -280,24 +294,17 @@ body {
   .printable-area .text-primary,
   .printable-area .text-primary\/90,
   .printable-area .text-primary\/80,
-  .printable-area .text-primary\/60 {
+  .printable-area .text-primary\/70,
+  .printable-area .text-primary\/60,
+  .printable-area .text-primary\/50 {
     color: #00005A !important; /* Dark blue, or just black */
   }
   .printable-area .text-accent,
+  .printable-area .text-accent\/70,
   .printable-area .text-accent\/60 {
     color: #4A0072 !important; /* Dark purple, or just black */
   }
-  .printable-area .bg-primary\/5,
-  .printable-area .bg-primary\/10,
-  .printable-area .bg-primary-light,
-  .printable-area .bg-accent\/10, /* from flaggedClauses */
-  .printable-area .bg-accent-light,
-  .printable-area .bg-muted\/30 {
-     background-color: #f9f9f9 !important; /* Very light gray for subtle backgrounds */
-     border: 1px solid #eee !important;
-     padding: 0.5rem !important;
-     border-radius: 0 !important;
-  }
+
   .printable-area .text-on-accent {
      color: black !important;
   }
@@ -340,18 +347,23 @@ body {
   .printable-area .border-primary\/20,
   .printable-area .border-primary\/30,
   .printable-area .border-primary\/40,
+  .printable-area .border-primary\/50,
   .printable-area .border-accent\/30,
   .printable-area .border-accent\/40,
   .printable-area .border-accent\/50,
   .printable-area .border-accent\/60,
-  .printable-area .border-primary\/50,
-  .printable-area .border-primary\/60 {
+  .printable-area .border-border\/70, /* from summary list items */
+  .printable-area .border-green-500, /* from accepted fix cards */
+  .printable-area .border-green-600, /* from accepted fix internal notes */
+  .printable-area .border-yellow-500, /* from suggested fix internal notes */
+  .printable-area .border-green-400 { /* from chat AI response */
     border-color: #ddd !important;
   }
   .printable-area .shadow-sm,
   .printable-area .shadow-md,
   .printable-area .shadow-lg,
-  .printable-area .shadow-xl {
+  .printable-area .shadow-xl,
+  .printable-area .shadow-2xl { /* from main report card */
     box-shadow: none !important;
   }
   .printable-area .badge {
@@ -377,10 +389,17 @@ body {
     color: #333 !important;
   }
   .printable-area .badge[data-variant="outline"].border-primary\/40,
-  .printable-area .badge[data-variant="outline"].border-accent\/60 {
+  .printable-area .badge[data-variant="outline"].border-accent\/60,
+  .printable-area .badge[data-variant="outline"].border-primary\/50, /* From LegalForesight outcomes */
+  .printable-area .badge[data-variant="outline"].border-accent\/70 { /* From risk tags on flagged clauses */
     border-color: #aaa !important;
     background-color: #f0f0f0 !important; /* ensure some background for outline badges */
     color: black !important;
+  }
+
+  .printable-area .line-through {
+      text-decoration: line-through !important;
+      opacity: 0.7 !important;
   }
 
 
@@ -392,5 +411,3 @@ body {
     scrollbar-width: none !important; /* For Firefox */
   }
 }
-
-    

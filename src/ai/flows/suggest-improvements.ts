@@ -15,14 +15,14 @@ import {z} from 'genkit';
 const SuggestImprovementsInputSchema = z.object({
   documentText: z.string().optional().describe('The text content of the legal document to be reviewed.'),
   photoDataUri: z.string().optional().describe("A photo or scan of the document, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. This can be an image file or a PDF file represented as a data URI."),
-  context: z.string().optional().describe('Context about the document to improve suggestions.'),
+  context: z.string().optional().describe('User-provided context about the document (e.g., "Employment Agreement", "NDA for startup"). This helps tailor the improvement suggestions.'),
 });
 export type SuggestImprovementsInput = z.infer<typeof SuggestImprovementsInputSchema>;
 
 const SuggestImprovementsOutputSchema = z.object({
   suggestions: z.array(
-    z.string().describe('A specific suggestion for improving the document.')
-  ).describe('A list of suggestions to improve the document, addressing completeness, terms, and legal soundness.'),
+    z.string().describe('A specific, actionable suggestion for improving the document, explaining its benefit.')
+  ).describe('A list of suggestions to improve the document, addressing completeness, terms, and legal soundness, tailored to the document context.'),
 });
 export type SuggestImprovementsOutput = z.infer<typeof SuggestImprovementsOutputSchema>;
 
@@ -50,11 +50,13 @@ Document Image:
 {{media url=photoDataUri}}
 {{/if}}
 
-Context: {{context}}
+Document Context: {{#if context}}{{context}}{{else}}General legal document.{{/if}}
 
-Provide a list of actionable suggestions to improve the document's completeness, terms, and legal soundness. Be specific and explain why each suggestion is important.
+Provide a list of actionable suggestions to improve the document's completeness, terms, and legal soundness, taking the document context into account.
+For each suggestion, briefly explain why it is important or what benefit it provides.
+Focus on practical and legally sound improvements.
 
-Format your response as a list of suggestions:
+Format your response as a list of suggestions.
 `,
 });
 
