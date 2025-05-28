@@ -35,12 +35,7 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild className="text-muted-foreground hover:text-primary">
-                <Link href="/login">
-                  <LogIn className="h-5 w-5 mr-1 sm:mr-2" />
-                  Login
-                </Link>
-              </Button>
+              {/* Login button removed as per request */}
               <Button variant="default" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/signup">
                   <FilePlus className="h-5 w-5 mr-1 sm:mr-2" />
